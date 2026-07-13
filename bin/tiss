@@ -34,7 +34,8 @@ TISS_NAME="$(basename "$0")" # help output follows the alias/symlink name
 TISS_SCRIPTS="$TISS_HOME/scripts"
 TISS_LIB="$TISS_HOME/lib"
 TISS_CONFIG="${TISS_CONFIG:-$HOME/.config/tiss}"
-export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG
+TISS_DATA="${TISS_DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/data}"
+export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG TISS_DATA
 
 # Helpers (log*, meta, ensureTool, time helpers, ...) shared with all scripts.
 . "$TISS_LIB/init.sh"

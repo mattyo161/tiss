@@ -113,16 +113,25 @@ protocol only signs), so tiss provides its own session-unlock rather than
 pretending otherwise. Compression always happens *before* encryption
 (encrypted bytes don't compress).
 
-### Data store (`saveData` / `readData`) — planned
+### Data store (`saveData` / `readData`) — implemented
 
 Named pipe-friendly storage: `... | saveData name` writes stdin to the
-data dir; `readData name | ...` streams it back.
+data dir (`$TISS_DATA`, default `~/.local/share/tiss/data`);
+`readData name | ...` streams it back.
 
-- Buffered, non-blocking writes to a tmp file, atomically renamed on
-  completion.
-- `--gzip` on by default; `--encrypt` chains the encryption subsystem.
-- Extensions record the pipeline (`name.gz.age`), so `readData` unwinds
-  automatically.
+- Writes stream to a tmp file next to the target and are renamed
+  atomically on completion — readers never see partial data.
+- `--gzip` on by default; `--encrypt` chains the encryption subsystem
+  (public-key only, so saving never prompts; reading unlocks per session).
+- Extensions record the pipeline (`name.gz.age`), and `readData` unwinds
+  them right-to-left automatically — no flags on the read side.
+- **One file per name**: a successful save removes variants written with
+  different options; if a crashed save ever leaves duplicates, newest wins.
+- Names may contain `/` for namespacing (`aws/params`); absolute paths and
+  `..` are rejected.
+- Implemented as lib functions (`lib/data.sh`) so scripts call them
+  in-process, with thin `scripts/saveData.sh` / `readData.sh` wrappers so
+  they are also commands (`tiss saveData ...`) and appear in `--manifest`.
 
 ### Tool wrapping & lazy install — implemented (v1)
 
@@ -144,6 +153,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `ts`, `utc`, `dur2s`, `ts2js` | done | One time standard everywhere; `dur2s` parses `1w1d5h` |
 | `meta`, `metaAll`, `tissHelp` | done | Read `# @` annotations; render `--help` |
 | `ensureTool` | done | Lazy install via mise |
+| `saveData` / `readData` | done | Named pipe-friendly data store (see "Data store") |
 | `learnExec` | planned | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to a history log — teaches users what scripts actually run |
 | `cacheExec` | planned | SHA digest of argv + declared significant env vars (e.g. `AWS_PROFILE`) keys a `saveData`-backed cache; `--duration` (default 1h), `--encrypt`, `--gzip` |
 | `rmAfter` | planned | Deferred deletion (`rmAfter 15s <tmpfile>`): timestamp-prefixed symlinks in a `.rmAfter` dir, swept opportunistically on every tiss invocation |
@@ -162,11 +172,12 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | 2026-07-12 | Encryption: age with tiss-managed identity + per-session unlock (ssh-agent can't decrypt) |
 | 2026-07-12 | Compression before encryption, always |
 | 2026-07-12 | Lazy tool install delegated to mise |
+| 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
 
 ## Open questions
 
-- `saveData` default location and layout (`~/.local/share/tiss/data`?),
-  collision/namespacing rules, retention.
+- Data retention: nothing expires yet — `rmAfter` and `cacheExec
+  --duration` will build on the data store.
 - Config & environments: where business context lives (per-user vs
   per-repo vs per-env), and how open-source core separates from
   company-private script trees (overlay search path? `TISS_PATH`?).
