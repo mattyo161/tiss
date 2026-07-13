@@ -166,6 +166,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | Date | Decision |
 | --- | --- |
 | 2026-07-12 | Name: **tiss**; repo `mattyo161/tiss`, public from day one |
+| 2026-07-13 | Name re-evaluated against `tise` (The Intuitive Scripting *Engine*) and rejected: Tise is Norway's largest resale marketplace (2.5M users, acquired by eBay in 2025) — an owned software brand with hopeless SEO; pronunciation is ambiguous (tice/teez/tee-seh); and "Engine" undersells the system (conventions + helpers + scripts, not just the dispatcher). The dispatcher may informally be called "the tiss engine" |
 | 2026-07-12 | Invocation name user-chosen via symlink/alias; dispatcher argv[0]-aware |
 | 2026-07-12 | Thin bash dispatcher + polyglot leaf scripts |
 | 2026-07-12 | Metadata as `# @` comment annotations -> `--help` + `--manifest` jsonl |
