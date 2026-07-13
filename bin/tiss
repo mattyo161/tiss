@@ -3,18 +3,18 @@
 # tiss — The Intuitive Scripting System
 #
 # A directory-routed universal script CLI:
-#   tiss git clone <repo>   -> runs scripts/git/clone.sh if it exists,
-#                              otherwise passes through to plain `git clone`
-#                              (installing git first if it is missing).
+#   tiss git clone <repo>   -> runs git/clone.sh from the first overlay tree
+#                              that has it (or the core), otherwise passes
+#                              through to plain `git` (installing it first
+#                              if it is missing).
+#
+# Overlay trees (TISS_PATH, managed by `tiss tiss tree`) layer private or
+# company script trees over the core: most-specific first, first match wins,
+# core always last. Help, completions and --manifest merge all trees.
 #
 # Invoke under any name you like: symlink or alias this file and every help
 # message follows the name you chose (argv[0]-aware):
 #   ln -s /path/to/tiss/bin/tiss /usr/local/bin/x
-#
-# Command resolution order (most specific wins):
-#   1. exact script match      scripts/git/clone.sh
-#   2. namespace descent       scripts/git/ (keep consuming args)
-#   3. passthrough             exec the underlying tool with the original args
 #
 set -euo pipefail
 
@@ -38,18 +38,20 @@ TISS_DATA="${TISS_DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/data}"
 TISS_STATE="${TISS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/tiss}"
 export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG TISS_DATA TISS_STATE
 
-# Helpers (log*, meta, ensureTool, time helpers, ...) shared with all scripts.
+# Helpers (log*, meta, ensureTool, cfg, tissTrees, ...) shared with all
+# scripts. Also loads user config + overlay configs/libs (TISS_PATH).
 . "$TISS_LIB/init.sh"
+export TISS_PATH="${TISS_PATH:-}" # resolved by config; scripts inherit it
 
 # --- discovery ---------------------------------------------------------------
-listScripts() { # listScripts <dir> -> executable files under dir, sorted
+listScripts() { # listScripts <scripts-root> -> executable files, sorted
   find "$1" -type f | sort | while IFS= read -r f; do
     [ -x "$f" ] && printf '%s\n' "$f"
   done
 }
 
-cmdOf() { # cmdOf <file> -> command words ("git clone" for scripts/git/clone.sh)
-  local rel="${1#"$TISS_SCRIPTS"/}"
+cmdOf() { # cmdOf <scripts-root> <file> -> command words ("git clone")
+  local rel="${2#"$1"/}"
   rel="${rel%.*}"
   printf '%s\n' "${rel//\// }"
 }
@@ -65,22 +67,67 @@ findScript() { # findScript <node> <token> -> matching executable, or fail
   return 1
 }
 
-# --- help --------------------------------------------------------------------
-showHelp() { # showHelp [node] — top-level or namespace help
-  local node="${1:-$TISS_SCRIPTS}"
-  local ns="${node#"$TISS_SCRIPTS"}"
-  ns="${ns#/}"
-  ns="${ns//\// }"
+treeTag() { # treeTag <tree-root> -> short label for help/manifest
+  if [ "$1" = "$TISS_HOME" ]; then
+    echo "core"
+  else
+    basename "$1"
+  fi
+}
 
+# resolveInTree <scripts-root> <args...>
+# Walks one tree; on a script match sets RESOLVED_SCRIPT/RESOLVED_SHIFT.
+RESOLVED_SCRIPT=""
+RESOLVED_SHIFT=0
+resolveInTree() {
+  local node="$1" consumed=0 script
+  shift
+  while [ $# -gt 0 ]; do
+    case "$1" in -*) return 1 ;; esac # flags never route
+    if script="$(findScript "$node" "$1")"; then
+      RESOLVED_SCRIPT="$script"
+      RESOLVED_SHIFT=$((consumed + 1))
+      return 0
+    elif [ -d "$node/$1" ]; then
+      node="$node/$1"
+      consumed=$((consumed + 1))
+      shift
+    else
+      return 1
+    fi
+  done
+  return 1
+}
+
+# --- help --------------------------------------------------------------------
+showHelp() { # showHelp [namespace words...] — merged across all trees
+  local ns="$*"
   echo "usage: $TISS_NAME ${ns:+$ns }<command> [args...]"
   echo
   echo "commands:"
-  local f rel
-  listScripts "$node" | while IFS= read -r f; do
-    rel="${f#"$node"/}"
-    rel="${rel%.*}"
-    printf '  %-22s %s\n' "${rel//\// }" "$(meta "$f" description)"
-  done
+  local tree root node f rel tag seen="
+"
+  while IFS= read -r tree; do
+    root="$tree/scripts"
+    node="$root${ns:+/${ns// /\/}}"
+    [ -d "$node" ] || continue
+    tag="$(treeTag "$tree")"
+    while IFS= read -r f; do
+      rel="${f#"$node"/}"
+      rel="${rel%.*}"
+      rel="${rel//\// }"
+      case "$seen" in *"
+$rel
+"*) continue ;; esac # shadowed by a more specific tree
+      seen="$seen$rel
+"
+      if [ "$tag" = "core" ]; then
+        printf '  %-22s %s\n' "$rel" "$(meta "$f" description)"
+      else
+        printf '  %-22s %s [%s]\n' "$rel" "$(meta "$f" description)" "$tag"
+      fi
+    done < <(listScripts "$node")
+  done < <(tissTrees)
   echo
   if [ -n "$ns" ]; then
     echo "Anything else passes through to \`${ns%% *}\` itself."
@@ -93,65 +140,92 @@ showHelp() { # showHelp [node] — top-level or namespace help
 }
 
 # --- manifest ----------------------------------------------------------------
-# One JSON object per command (jsonl), for AI agents and tooling.
+# One JSON object per command (jsonl), for AI agents and tooling. Merged
+# across trees; each entry carries its source tree, shadowed entries drop.
 manifest() {
   ensureTool jq || exit 127
-  local f
-  listScripts "$TISS_SCRIPTS" | while IFS= read -r f; do
-    jq -cn \
-      --arg command "$(cmdOf "$f")" \
-      --arg description "$(meta "$f" description)" \
-      --arg usage "$(meta "$f" usage)" \
-      --arg needs "$(meta "$f" needs)" \
-      --arg examples "$(metaAll "$f" example)" \
-      --arg source "${f#"$TISS_HOME"/}" \
-      '{command: $command,
-        type: "scripted",
-        description: $description,
-        usage: $usage,
-        needs: ($needs | split(" ") | map(select(. != ""))),
-        examples: ($examples | split("\n") | map(select(. != ""))),
-        source: $source}'
-  done
+  local tree root f cmd seen="
+"
+  while IFS= read -r tree; do
+    root="$tree/scripts"
+    [ -d "$root" ] || continue
+    while IFS= read -r f; do
+      cmd="$(cmdOf "$root" "$f")"
+      case "$seen" in *"
+$cmd
+"*) continue ;; esac
+      seen="$seen$cmd
+"
+      jq -cn \
+        --arg command "$cmd" \
+        --arg description "$(meta "$f" description)" \
+        --arg usage "$(meta "$f" usage)" \
+        --arg needs "$(meta "$f" needs)" \
+        --arg examples "$(metaAll "$f" example)" \
+        --arg source "${f#"$tree"/}" \
+        --arg tree "$(treeTag "$tree")" \
+        '{command: $command,
+          type: "scripted",
+          description: $description,
+          usage: $usage,
+          needs: ($needs | split(" ") | map(select(. != ""))),
+          examples: ($examples | split("\n") | map(select(. != ""))),
+          source: $source,
+          tree: $tree}'
+    done < <(listScripts "$root")
+  done < <(tissTrees)
 }
 
 # --- shell completion ---------------------------------------------------------
 # Called by the completion functions emitted by `tiss tiss completion`:
 #   tiss --complete <completed words...>       plain candidates (bash)
 #   tiss --complete-zsh <completed words...>   name:description pairs (zsh)
-# Walks the tree with the words typed so far and lists what could come next.
+# Union of every tree's candidates at the walked node.
 shellComplete() {
-  local mode="$1"
+  local mode="$1" tree node w entry name seen="
+" skip
   shift
-  local node="$TISS_SCRIPTS" w
-  for w in "$@"; do
-    [ -n "$w" ] || continue
-    if [ -d "$node/$w" ]; then
-      node="$node/$w"
-      continue
-    fi
-    # Inside a script's (or a passthrough tool's) own args — nothing to add.
-    return 0
-  done
-  local entry name
-  for entry in "$node"/*; do
-    [ -e "$entry" ] || continue
-    name="$(basename "$entry")"
-    if [ -d "$entry" ]; then
+  while IFS= read -r tree; do
+    node="$tree/scripts"
+    skip=0
+    for w in "$@"; do
+      [ -n "$w" ] || continue
+      if [ -d "$node/$w" ]; then
+        node="$node/$w"
+      elif findScript "$node" "$w" >/dev/null 2>&1; then
+        return 0 # inside a script's own args — nothing to add
+      else
+        skip=1
+        break
+      fi
+    done
+    [ "$skip" = 1 ] && continue
+    for entry in "$node"/*; do
+      [ -e "$entry" ] || continue
+      name="$(basename "$entry")"
+      if [ -d "$entry" ]; then
+        :
+      elif [ -f "$entry" ] && [ -x "$entry" ]; then
+        name="${name%.*}"
+      else
+        continue
+      fi
+      case "$seen" in *"
+$name
+"*) continue ;; esac
+      seen="$seen$name
+"
       if [ "$mode" = "zsh" ]; then
-        printf '%s:%s\n' "$name" "($(basename "$entry") commands)"
+        if [ -d "$entry" ]; then
+          printf '%s:%s\n' "$name" "($name commands)"
+        else
+          printf '%s:%s\n' "$name" "$(meta "$entry" description)"
+        fi
       else
         printf '%s\n' "$name"
       fi
-    elif [ -f "$entry" ] && [ -x "$entry" ]; then
-      name="${name%.*}"
-      if [ "$mode" = "zsh" ]; then
-        printf '%s:%s\n' "$name" "$(meta "$entry" description)"
-      else
-        printf '%s\n' "$name"
-      fi
-    fi
-  done
+    done
+  done < <(tissTrees)
 }
 
 # --- passthrough -------------------------------------------------------------
@@ -185,19 +259,17 @@ main() {
       ;;
   esac
 
-  local node="$TISS_SCRIPTS" depth=0 script
-  local orig=("$@")
-
-  # Walk the scripts tree, consuming one token per level.
-  local dep
-  while [ $# -gt 0 ]; do
-    case "$1" in -*) break ;; esac # flags never route
-    if script="$(findScript "$node" "$1")"; then
-      shift
+  # First tree with a script match wins (overlay beats core).
+  # NOTE: the tree list is read on fd 3, NOT stdin — a `while read` loop
+  # redirected on fd 0 would replace stdin for the exec'd script and break
+  # every pipe into a tiss command (found the hard way).
+  local tree dep script
+  while IFS= read -r tree <&3; do
+    if resolveInTree "$tree/scripts" "$@"; then
+      script="$RESOLVED_SCRIPT"
+      shift "$RESOLVED_SHIFT"
       # Preflight: install whatever the script declares via `# @needs`
-      # before it runs — this is what lets a leaf be python-via-uv, or
-      # lean on mlr/age/anything, and still guide a fresh machine.
-      # (Asking for help never installs anything.)
+      # before it runs. (Asking for help never installs anything.)
       case "${1:-}" in
         -h | --help) ;;
         *)
@@ -206,24 +278,34 @@ main() {
           done
           ;;
       esac
+      exec 3<&-
       exec "$script" "$@"
-    elif [ -d "$node/$1" ]; then
-      node="$node/$1"
-      depth=$((depth + 1))
-      shift
-    else
-      break
     fi
-  done
+  done 3< <(tissTrees)
 
-  # Landed exactly on a namespace (`tiss git`): show what it offers.
-  if [ $# -eq 0 ] && [ "$depth" -gt 0 ]; then
-    showHelp "$node"
-    exit 0
+  # Landed exactly on a namespace (`tiss git`) in any tree: merged help.
+  local ns=() all_dirs=1 w
+  for w in "$@"; do
+    case "$w" in -*)
+      all_dirs=0
+      break
+      ;;
+    esac
+    ns+=("$w")
+  done
+  if [ "$all_dirs" = 1 ] && [ ${#ns[@]} -gt 0 ]; then
+    local nspath
+    nspath="$(printf '/%s' "${ns[@]}")"
+    while IFS= read -r tree; do
+      if [ -d "$tree/scripts$nspath" ]; then
+        showHelp "${ns[@]}"
+        exit 0
+      fi
+    done < <(tissTrees)
   fi
 
   # No script matched: behave as if the wrapped tool was called natively.
-  passthrough "${orig[@]}"
+  passthrough "$@"
 }
 
 main "$@"

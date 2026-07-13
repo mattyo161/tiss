@@ -161,10 +161,33 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | format conversions | done | `csv2json`/`tsv2json`/`json2csv`/`json2tsv`/`json2md` as mlr façades (jsonl-first); `json2xlsx` is a python leaf via uv + PEP 723 inline deps — bold frozen header, comma number formats, real dates |
 | fuzzy date parsing | done | `tiss dt parse`: python leaf (stdlib only), format battery + inference — 2-digit years 00-30→2000s/31-99→1900s, weekday overrides century, missing year resolves nearest-to-now; jsonl out, `--epoch/--iso/--ts` plain modes, stdin line mode |
 
+### Overlay trees & config layering — implemented
+
+A tree is any directory containing `scripts/`, with optional
+`etc/config.sh` (defaults) and `lib/init.sh` (helpers) making it a
+full-power overlay. `TISS_PATH` lists trees most-specific first; the core
+(`$TISS_HOME`) is always last. First tree with a script match wins —
+overlays may shadow core commands. Help, `--manifest` and completions
+merge all trees (entries tagged with their source tree; shadowed entries
+dropped). `tiss tiss tree add|remove|list` manages the stack, persisted as
+`cfg TISS_PATH ...` in `~/.config/tiss/config.sh`; a `TISS_PATH` env var
+overrides entirely.
+
+Config layering uses `cfg VAR default...`, which only assigns when the
+variable is empty — so whoever is sourced FIRST wins, and the environment
+(set before any sourcing) always beats every file. Sourcing order: user
+config, then tree configs most-specific first. Tree `lib/init.sh` files
+load in REVERSE (least-specific first) so more specific function
+definitions override.
+
 ## Decision log
 
 | Date | Decision |
 | --- | --- |
+| 2026-07-13 | Overlay system: TISS_PATH most-specific-first, overlay wins, full-power trees (scripts+config+libs); `cfg` first-wins semantics make env > user > specific > core; managed via `tiss tiss tree` |
+| 2026-07-13 | No TISS_ENV environment concept yet — AWS_PROFILE-style env vars already carry context and cacheExec keys on them; revisit when a wrapper needs it |
+| 2026-07-13 | Wrapper library launches with git, db (encrypted-creds pattern), terraform (hard plan-file discipline, no force flag) — aws deferred |
+| 2026-07-13 | Distribution: semver tags + curl-able install.sh + CONTRIBUTING; brew tap deferred until the interface settles |
 | 2026-07-12 | Name: **tiss**; repo `mattyo161/tiss`, public from day one |
 | 2026-07-13 | Name re-evaluated against `tise` (The Intuitive Scripting *Engine*) and rejected: Tise is Norway's largest resale marketplace (2.5M users, acquired by eBay in 2025) — an owned software brand with hopeless SEO; pronunciation is ambiguous (tice/teez/tee-seh); and "Engine" undersells the system (conventions + helpers + scripts, not just the dispatcher). The dispatcher may informally be called "the tiss engine" |
 | 2026-07-12 | Invocation name user-chosen via symlink/alias; dispatcher argv[0]-aware |
@@ -188,9 +211,6 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 
 - Cache eviction: stale cacheExec entries linger until overwritten —
   a `tiss tiss gc` sweep may be worth adding.
-- Config & environments: where business context lives (per-user vs
-  per-repo vs per-env), and how open-source core separates from
-  company-private script trees (overlay search path? `TISS_PATH`?).
 - Manifest schema versioning; `env`/side-effect annotations.
 - Distribution: git clone + symlink today; brew tap / installer later.
 - Reaper via launchd/systemd user units: would survive reboots (schedules
