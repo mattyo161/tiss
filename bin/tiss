@@ -230,7 +230,8 @@ $name
 
 # --- passthrough -------------------------------------------------------------
 passthrough() { # passthrough <tool> [args...] — behave as if called natively
-  local tool="$1"
+  local tool
+  tool="$(tissCommandAlias "$1")" # e.g. `tiss tf init` -> terraform init
   shift
   ensureTool "$tool" || exit 127
   exec "$tool" "$@"

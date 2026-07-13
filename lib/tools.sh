@@ -18,6 +18,13 @@ tissRegistryName() { # command name -> package name (mise registry / brew)
   esac
 }
 
+tissCommandAlias() { # namespace/short name -> real binary for passthrough
+  case "$1" in
+    tf) echo terraform ;;
+    *) echo "$1" ;;
+  esac
+}
+
 ensureTool() { # ensureTool <name> -> 0 if available (installing if needed)
   local tool="$1"
   command -v "$tool" >/dev/null 2>&1 && return 0
