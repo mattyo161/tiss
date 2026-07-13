@@ -1,0 +1,157 @@
+# shellcheck shell=bash
+#
+# tiss execution wrappers — teach what ran, remember what it returned.
+#
+#   learnExec <cmd...>          run a command, showing (sanitized) what ran:
+#                               "[LEARN] aws s3 ls s3://bucket" on stderr,
+#                               plus an append to the history log. Multi-step
+#                               scripts become teachable: the user follows
+#                               along and sees every real command.
+#
+#   cacheExec [opts] <cmd...>   run a command through a content-addressed
+#                               cache: SHA-256 of argv + significant env vars
+#                               keys a saveData entry. Fresh hits return
+#                               instantly — ideal in front of slow, rarely
+#                               changing APIs (aws ssm describe-parameters).
+#
+
+# --- sanitizer ----------------------------------------------------------------
+# Heuristic redaction for rendering commands: secret-looking flags, key=value
+# pairs, and AWS-style access keys become REDACTED. This affects only what is
+# DISPLAYED/logged — the real argv always runs untouched.
+tissSanitizeCmd() {
+  local out="" a redact_next=0
+  for a in "$@"; do
+    if [ "$redact_next" = 1 ]; then
+      out="$out REDACTED"
+      redact_next=0
+      continue
+    fi
+    case "$a" in
+      --password | --passwd | --secret | --token | --api-key | --apikey | --access-key | --secret-key | --private-key)
+        out="$out $a"
+        redact_next=1
+        ;;
+      --password=* | --passwd=* | --secret=* | --token=* | --api-key=* | --apikey=* | --access-key=* | --secret-key=* | --private-key=*)
+        out="$out ${a%%=*}=REDACTED"
+        ;;
+      *[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]*=* | *[Ss][Ee][Cc][Rr][Ee][Tt]*=* | *[Tt][Oo][Kk][Ee][Nn]*=* | *_KEY=* | *_key=*)
+        out="$out ${a%%=*}=REDACTED"
+        ;;
+      AKIA[A-Z0-9]*)
+        out="$out REDACTED"
+        ;;
+      *)
+        out="$out $a"
+        ;;
+    esac
+  done
+  printf '%s\n' "${out# }"
+}
+
+# --- learnExec ----------------------------------------------------------------
+learnExec() { # learnExec <command> [args...] — run it, teaching what ran
+  if [ $# -eq 0 ]; then
+    logError "usage: learnExec <command> [args...]"
+    return 2
+  fi
+  local line color="" reset="" hist
+  line="$(tissSanitizeCmd "$@")"
+  if [ -t 2 ]; then
+    color=$'\033[35m'
+    reset=$'\033[0m'
+  fi
+  printf '%s[LEARN]%s %s\n' "$color" "$reset" "$line" >&2
+
+  # History log: what actually got run (sanitized), when.
+  hist="$(tissStateDir)/history.log"
+  mkdir -p "$(dirname "$hist")"
+  printf '%s %s\n' "$(ts)" "$line" >>"$hist"
+
+  "$@"
+}
+
+# --- cacheExec ----------------------------------------------------------------
+# Env vars that change a command's output must change its cache key. The
+# defaults cover the usual cloud context; extend with TISS_CACHE_ENV
+# (space-separated names). Only vars that are actually set participate.
+TISS_CACHE_ENV_DEFAULT="AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_ACCESS_KEY_ID GOOGLE_CLOUD_PROJECT CLOUDSDK_ACTIVE_CONFIG_NAME KUBECONFIG"
+
+tissSha256() { # stdin -> hex digest (shasum on macOS, sha256sum on linux)
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | cut -d' ' -f1
+  else
+    sha256sum | cut -d' ' -f1
+  fi
+}
+
+tissFileMtime() { # epoch mtime, BSD or GNU stat
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null
+}
+
+cacheExec() { # cacheExec [--duration D] [--refresh] [--encrypt] [--no-gzip] <command...>
+  local dur="1h" gz_opt="" enc_opt="" refresh=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --duration)
+        dur="${2:?--duration needs a value (e.g. 1h, 1w1d, 30)}"
+        shift
+        ;;
+      --refresh) refresh=1 ;;
+      --encrypt) enc_opt="--encrypt" ;;
+      --gzip) gz_opt="--gzip" ;;
+      --no-gzip) gz_opt="--no-gzip" ;;
+      *) break ;;
+    esac
+    shift
+  done
+  if [ $# -eq 0 ]; then
+    logError "usage: cacheExec [--duration D] [--refresh] [--encrypt] <command...>"
+    return 2
+  fi
+
+  local dur_s
+  dur_s="$(dur2s "$dur")" || return 2
+
+  # Cache key: the exact command line plus every significant env var that is
+  # set — AWS_PROFILE=prod and AWS_PROFILE=dev cache separately.
+  local sig="$*" v
+  for v in $TISS_CACHE_ENV_DEFAULT ${TISS_CACHE_ENV:-}; do
+    [ -n "${!v:-}" ] && sig="$sig $v=${!v}"
+  done
+  local key
+  key="cache/$(printf '%s' "$sig" | tissSha256)"
+
+  # Fresh hit?
+  if [ "$refresh" = 0 ]; then
+    local base f file="" now mtime
+    base="$(tissDataDir)/$key"
+    for f in "$base" "$base.gz" "$base.age" "$base.gz.age"; do
+      [ -f "$f" ] && file="$f"
+    done
+    if [ -n "$file" ]; then
+      now="$(date +%s)"
+      mtime="$(tissFileMtime "$file")"
+      if [ $((now - mtime)) -le "$dur_s" ]; then
+        logDebug "cacheExec: hit ($key)"
+        readData "$key"
+        return $?
+      fi
+    fi
+  fi
+
+  # Miss (or stale, or --refresh): run for real. A failing command is never
+  # cached — its exit status propagates and the old entry (if any) survives.
+  local tmp rc=0
+  tmp="$(mktemp)" || return 1
+  "$@" >"$tmp" || rc=$?
+  if [ "$rc" != 0 ]; then
+    rm -f "$tmp"
+    logError "cacheExec: command failed (exit $rc) — not cached"
+    return "$rc"
+  fi
+  # shellcheck disable=SC2086  # word-splitting of the option strings is intended
+  saveData $gz_opt $enc_opt "$key" <"$tmp"
+  cat "$tmp"
+  rm -f "$tmp"
+}

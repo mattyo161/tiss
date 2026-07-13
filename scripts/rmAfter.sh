@@ -4,10 +4,10 @@
 # @example tiss rmAfter 15s /tmp/db_creds.ini
 # @example tiss rmAfter 1h build.log debug.log
 #
-# Durations: 15s, 5m, 1h, 1w1d... (bare number = minutes). Deletion happens
-# in the background: every tiss invocation sweeps past-due schedules, so no
-# daemon is needed. Scheduling returns immediately — the file stays usable
-# until its time comes.
+# Durations: 15s, 5m, 1h, 1w1d... (bare number = minutes). Scheduling
+# returns immediately; a self-managing background monitor (pidfile-tracked,
+# started by rmAfter itself) sleeps until deadlines come due, reaps, and
+# exits when nothing is left. The file stays usable until its time comes.
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"

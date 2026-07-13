@@ -154,9 +154,9 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `meta`, `metaAll`, `tissHelp` | done | Read `# @` annotations; render `--help` |
 | `ensureTool` | done | Lazy install via mise |
 | `saveData` / `readData` | done | Named pipe-friendly data store (see "Data store") |
-| `learnExec` | planned | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to a history log — teaches users what scripts actually run |
-| `cacheExec` | planned | SHA digest of argv + declared significant env vars (e.g. `AWS_PROFILE`) keys a `saveData`-backed cache; `--duration` (default 1h), `--encrypt`, `--gzip` |
-| `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`, swept in the background on every tiss invocation — no daemon |
+| `learnExec` | done | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to `$TISS_STATE/history.log` — teaches users what scripts actually run. Sanitizer redacts secret-looking flags, `key=value` pairs, AWS access keys; display only, real argv runs untouched |
+| `cacheExec` | done | SHA-256 of argv + significant env vars (defaults cover AWS/GCP/kube context; extend via `TISS_CACHE_ENV`) keys a `saveData`-backed cache; `--duration` (default 1h), `--refresh`, `--encrypt`, `--no-gzip`; failing commands are never cached |
+| `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon |
 | `bkup` | planned | `cp -p` into a sibling `.bkup/` dir, named by the file's mtime |
 | fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
 | format conversions | planned | `csv2json`, `json2csv`, `md` tables, xlsx-with-formatting — thin façades over `jc`, `miller`, a python leaf for xlsx |
@@ -172,13 +172,13 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | 2026-07-12 | Encryption: age with tiss-managed identity + per-session unlock (ssh-agent can't decrypt) |
 | 2026-07-12 | Compression before encryption, always |
 | 2026-07-12 | Lazy tool install delegated to mise |
-| 2026-07-12 | rmAfter: state in `$TISS_STATE` (default `~/.local/state/tiss`), files only (never recurses), opportunistic background reaper in the dispatcher |
+| 2026-07-12 | rmAfter: state in `$TISS_STATE` (default `~/.local/state/tiss`), files only (never recurses); reap on rmAfter execution + pidfile-tracked monitor that retires when idle (not on every dispatch) |
 | 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
 
 ## Open questions
 
-- Data retention: nothing expires yet — `rmAfter` and `cacheExec
-  --duration` will build on the data store.
+- Cache eviction: stale cacheExec entries linger until overwritten —
+  a `tiss tiss gc` sweep may be worth adding.
 - Config & environments: where business context lives (per-user vs
   per-repo vs per-env), and how open-source core separates from
   company-private script trees (overlay search path? `TISS_PATH`?).

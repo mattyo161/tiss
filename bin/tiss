@@ -41,11 +41,6 @@ export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG TISS_DATA TISS_STAT
 # Helpers (log*, meta, ensureTool, time helpers, ...) shared with all scripts.
 . "$TISS_LIB/init.sh"
 
-# Opportunistic reaper: every invocation sweeps past-due rmAfter deletions
-# in the background — continuous cleanup with no daemon. Costs one readdir
-# when there is nothing to do.
-(tissReapRmAfter >/dev/null 2>&1 &)
-
 # --- discovery ---------------------------------------------------------------
 listScripts() { # listScripts <dir> -> executable files under dir, sorted
   find "$1" -type f | sort | while IFS= read -r f; do
