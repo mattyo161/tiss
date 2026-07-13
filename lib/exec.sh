@@ -85,8 +85,10 @@ tissSha256() { # stdin -> hex digest (shasum on macOS, sha256sum on linux)
   fi
 }
 
-tissFileMtime() { # epoch mtime, BSD or GNU stat
-  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null
+tissFileMtime() { # epoch mtime, GNU or BSD stat
+  # GNU first: BSD stat errors cleanly on -c, but GNU stat treats -f as
+  # FILESYSTEM status and happily prints garbage (the mount point) for %m.
+  stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
 }
 
 cacheExec() { # cacheExec [--duration D] [--refresh] [--encrypt] [--no-gzip] <command...>
