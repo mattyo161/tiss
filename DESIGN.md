@@ -177,6 +177,12 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | 2026-07-13 | rmAfter deletion allowlist (home + tmp default, `TISS_RMAFTER_PATHS` to customize), enforced at schedule and reap time — planted symlinks are dropped, never followed |
 | 2026-07-13 | Shell completions: live from the tree via `--complete`/`--complete-zsh`, emitted by `tiss tiss completion <bash\|zsh>`, argv[0]-aware |
 | 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
+| 2026-07-13 | Dispatcher preflights `# @needs` deps before exec; `--help` NEVER installs anything (asking about a command must be free) |
+| 2026-07-13 | `ensureTool`: mise first, brew fallback for packages outside mise's registry (found via miller); one name-mapping function serves both |
+| 2026-07-13 | Polyglot leaf convention: stdlib-only python leaves use plain `#!/usr/bin/env python3`; leaves needing third-party packages use uv + PEP 723 inline deps (`json2xlsx`). `# @` annotations work unchanged in python comments |
+| 2026-07-13 | `dt` is a namespace (`tiss dt parse`), leaving room for `dt fmt`, `dt add`, ... |
+| 2026-07-13 | Tests: dependency-free bash harness (no bats), isolated `TISS_DATA`/`TISS_STATE` per file, `tiss tiss test` runner; CI = shellcheck + suite on ubuntu & macos |
+| 2026-07-13 | Portability probing order: GNU syntax first, BSD fallback (GNU `stat -f` silently prints filesystem info instead of erroring — CI caught it) |
 
 ## Open questions
 
