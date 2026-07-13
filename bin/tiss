@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+#
+# tiss — The Intuitive Scripting System
+#
+# A directory-routed universal script CLI:
+#   tiss git clone <repo>   -> runs scripts/git/clone.sh if it exists,
+#                              otherwise passes through to plain `git clone`
+#                              (installing git first if it is missing).
+#
+# Invoke under any name you like: symlink or alias this file and every help
+# message follows the name you chose (argv[0]-aware):
+#   ln -s /path/to/tiss/bin/tiss /usr/local/bin/x
+#
+# Command resolution order (most specific wins):
+#   1. exact script match      scripts/git/clone.sh
+#   2. namespace descent       scripts/git/ (keep consuming args)
+#   3. passthrough             exec the underlying tool with the original args
+#
+set -euo pipefail
+
+# --- self-location -----------------------------------------------------------
+# Resolve symlinks portably (macOS ships BSD readlink, which historically has
+# no -f), so a symlink like /usr/local/bin/x still finds the real tree.
+self="${BASH_SOURCE[0]}"
+while [ -L "$self" ]; do
+  dir="$(cd -P "$(dirname "$self")" && pwd)"
+  self="$(readlink "$self")"
+  case "$self" in /*) ;; *) self="$dir/$self" ;; esac
+done
+TISS_BIN_DIR="$(cd -P "$(dirname "$self")" && pwd)"
+
+TISS_HOME="${TISS_HOME:-$(dirname "$TISS_BIN_DIR")}"
+TISS_NAME="$(basename "$0")" # help output follows the alias/symlink name
+TISS_SCRIPTS="$TISS_HOME/scripts"
+TISS_LIB="$TISS_HOME/lib"
+TISS_CONFIG="${TISS_CONFIG:-$HOME/.config/tiss}"
+export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG
+
+# Helpers (log*, meta, ensureTool, time helpers, ...) shared with all scripts.
+. "$TISS_LIB/init.sh"
+
+# --- discovery ---------------------------------------------------------------
+listScripts() { # listScripts <dir> -> executable files under dir, sorted
+  find "$1" -type f | sort | while IFS= read -r f; do
+    [ -x "$f" ] && printf '%s\n' "$f"
+  done
+}
+
+cmdOf() { # cmdOf <file> -> command words ("git clone" for scripts/git/clone.sh)
+  local rel="${1#"$TISS_SCRIPTS"/}"
+  rel="${rel%.*}"
+  printf '%s\n' "${rel//\// }"
+}
+
+findScript() { # findScript <node> <token> -> matching executable, or fail
+  local f
+  for f in "$1/$2" "$1/$2".*; do
+    if [ -f "$f" ] && [ -x "$f" ]; then
+      printf '%s\n' "$f"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# --- help --------------------------------------------------------------------
+showHelp() { # showHelp [node] — top-level or namespace help
+  local node="${1:-$TISS_SCRIPTS}"
+  local ns="${node#"$TISS_SCRIPTS"}"
+  ns="${ns#/}"
+  ns="${ns//\// }"
+
+  echo "usage: $TISS_NAME ${ns:+$ns }<command> [args...]"
+  echo
+  echo "commands:"
+  local f rel
+  listScripts "$node" | while IFS= read -r f; do
+    rel="${f#"$node"/}"
+    rel="${rel%.*}"
+    printf '  %-22s %s\n' "${rel//\// }" "$(meta "$f" description)"
+  done
+  echo
+  if [ -n "$ns" ]; then
+    echo "Anything else passes through to \`${ns%% *}\` itself."
+  else
+    echo "Anything else passes through to the underlying tool, installing it"
+    echo "first if needed:  $TISS_NAME rg TODO   # installs ripgrep, runs it"
+    echo
+    echo "  $TISS_NAME --manifest   machine-readable command list (jsonl)"
+  fi
+}
+
+# --- manifest ----------------------------------------------------------------
+# One JSON object per command (jsonl), for AI agents and tooling.
+manifest() {
+  ensureTool jq || exit 127
+  local f
+  listScripts "$TISS_SCRIPTS" | while IFS= read -r f; do
+    jq -cn \
+      --arg command "$(cmdOf "$f")" \
+      --arg description "$(meta "$f" description)" \
+      --arg usage "$(meta "$f" usage)" \
+      --arg needs "$(meta "$f" needs)" \
+      --arg examples "$(metaAll "$f" example)" \
+      --arg source "${f#"$TISS_HOME"/}" \
+      '{command: $command,
+        type: "scripted",
+        description: $description,
+        usage: $usage,
+        needs: ($needs | split(" ") | map(select(. != ""))),
+        examples: ($examples | split("\n") | map(select(. != ""))),
+        source: $source}'
+  done
+}
+
+# --- passthrough -------------------------------------------------------------
+passthrough() { # passthrough <tool> [args...] — behave as if called natively
+  local tool="$1"
+  shift
+  ensureTool "$tool" || exit 127
+  exec "$tool" "$@"
+}
+
+# --- main --------------------------------------------------------------------
+main() {
+  case "${1:-}" in
+    "" | -h | --help | help)
+      showHelp
+      exit 0
+      ;;
+    --manifest)
+      manifest
+      exit 0
+      ;;
+  esac
+
+  local node="$TISS_SCRIPTS" depth=0 script
+  local orig=("$@")
+
+  # Walk the scripts tree, consuming one token per level.
+  while [ $# -gt 0 ]; do
+    case "$1" in -*) break ;; esac # flags never route
+    if script="$(findScript "$node" "$1")"; then
+      shift
+      exec "$script" "$@"
+    elif [ -d "$node/$1" ]; then
+      node="$node/$1"
+      depth=$((depth + 1))
+      shift
+    else
+      break
+    fi
+  done
+
+  # Landed exactly on a namespace (`tiss git`): show what it offers.
+  if [ $# -eq 0 ] && [ "$depth" -gt 0 ]; then
+    showHelp "$node"
+    exit 0
+  fi
+
+  # No script matched: behave as if the wrapped tool was called natively.
+  passthrough "${orig[@]}"
+}
+
+main "$@"
