@@ -47,8 +47,8 @@ case ":$PATH:" in
 esac
 
 say "checking your setup..."
-"$bin_dir/$name" tiss doctor || true
+"$bin_dir/$name" self doctor || true
 
 say "done. next steps:"
 say "  $name                          # explore the command tree"
-say "  eval \"\$($name tiss completion zsh)\"   # tab completion (~/.zshrc, after compinit)"
+say "  eval \"\$($name self completion zsh)\"   # tab completion (~/.zshrc, after compinit)"

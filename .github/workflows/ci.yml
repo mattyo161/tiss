@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y shellcheck
-          shellcheck bin/tiss lib/*.sh scripts/*.sh scripts/tiss/*.sh tests/*.sh
+          shellcheck bin/tiss lib/*.sh scripts/*.sh scripts/self/*.sh tests/*.sh
 
   test:
     strategy:

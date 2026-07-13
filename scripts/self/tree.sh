@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # @description Manage overlay script trees (add, remove, list)
-# @usage tiss tiss tree <list|add PATH|remove PATH>
-# @example tiss tiss tree add ~/work/acme-tiss
-# @example tiss tiss tree list
+# @usage tiss self tree <list|add PATH|remove PATH>
+# @example tiss self tree add ~/work/acme-tiss
+# @example tiss self tree list
 #
 # Overlay trees layer private/company commands over the core: most-specific
 # first, first match wins. A tree is a directory containing scripts/
@@ -14,7 +14,7 @@ set -euo pipefail
 source "$TISS_LIB/init.sh"
 
 configFile="$TISS_CONFIG/config.sh"
-marker="# tiss:tree-path (managed by 'tiss tiss tree')"
+marker="# tiss:tree-path (managed by 'tiss self tree')"
 
 currentTrees() { # overlay roots from the current stack (core excluded)
   tissTrees | while IFS= read -r t; do

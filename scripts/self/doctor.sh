@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # @description Check your tiss installation and guide you through anything missing
-# @usage tiss tiss doctor
-# @example tiss tiss doctor
+# @usage tiss self doctor
+# @example tiss self doctor
 #
 # The intuitive way in: run this first on a new machine and follow the hints.
 #

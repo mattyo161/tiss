@@ -7,7 +7,7 @@
 help_out="$("$TISS_BIN")"
 assertMatch "help shows usage" '^usage: tiss' "$help_out"
 assertMatch "help lists encrypt" 'encrypt' "$help_out"
-assertMatch "help lists namespaced command" 'tiss doctor' "$help_out"
+assertMatch "help lists namespaced command" 'self doctor' "$help_out"
 
 # argv[0] awareness via symlink.
 ln -s "$TISS_BIN" "$TISS_TEST_TMP/x"
@@ -15,8 +15,8 @@ x_help="$("$TISS_TEST_TMP/x")"
 assertMatch "symlinked name in usage" '^usage: x' "$x_help"
 
 # Namespace landing.
-ns="$("$TISS_BIN" tiss)"
-assertMatch "namespace help" '^usage: tiss tiss' "$ns"
+ns="$("$TISS_BIN" self)"
+assertMatch "namespace help" '^usage: tiss self' "$ns"
 assertMatch "namespace lists doctor" 'doctor' "$ns"
 
 # Manifest is valid jsonl with expected fields.
@@ -34,11 +34,11 @@ assertExit "missing tool without mise install" 127 env TISS_AUTO_INSTALL=never "
 # Completion.
 top="$("$TISS_BIN" --complete "")"
 assertMatch "completion lists encrypt" '(^|\n)encrypt(\n|$)' "$top"
-assertMatch "completion lists tiss namespace" '(^|\n)tiss(\n|$)' "$top"
-sub="$("$TISS_BIN" --complete tiss)"
+assertMatch "completion lists self namespace" '(^|\n)self(\n|$)' "$top"
+sub="$("$TISS_BIN" --complete self)"
 assertMatch "completion descends namespaces" 'doctor' "$sub"
 assertEq "no completion inside script args" "" "$("$TISS_BIN" --complete encrypt --in)"
-zsh_mode="$("$TISS_BIN" --complete-zsh tiss)"
+zsh_mode="$("$TISS_BIN" --complete-zsh self)"
 assertMatch "zsh completions carry descriptions" 'doctor:Check' "$zsh_mode"
 
 # Script --help renders from annotations.

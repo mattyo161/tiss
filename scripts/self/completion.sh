@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # @description Emit shell completion code for bash or zsh
-# @usage tiss tiss completion <bash|zsh>
-# @example eval "$(tiss tiss completion zsh)"    # in ~/.zshrc, after compinit
-# @example eval "$(tiss tiss completion bash)"   # in ~/.bashrc
+# @usage tiss self completion <bash|zsh>
+# @example eval "$(tiss self completion zsh)"    # in ~/.zshrc, after compinit
+# @example eval "$(tiss self completion bash)"   # in ~/.bashrc
 #
 # Completions are generated for whatever name invoked tiss — if you
 # symlinked the dispatcher as `x`, run `x tiss completion zsh` and tab

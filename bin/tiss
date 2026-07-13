@@ -8,7 +8,7 @@
 #                              through to plain `git` (installing it first
 #                              if it is missing).
 #
-# Overlay trees (TISS_PATH, managed by `tiss tiss tree`) layer private or
+# Overlay trees (TISS_PATH, managed by `tiss self tree`) layer private or
 # company script trees over the core: most-specific first, first match wins,
 # core always last. Help, completions and --manifest merge all trees.
 #
@@ -177,7 +177,7 @@ $cmd
 }
 
 # --- shell completion ---------------------------------------------------------
-# Called by the completion functions emitted by `tiss tiss completion`:
+# Called by the completion functions emitted by `tiss self completion`:
 #   tiss --complete <completed words...>       plain candidates (bash)
 #   tiss --complete-zsh <completed words...>   name:description pairs (zsh)
 # Union of every tree's candidates at the walked node.

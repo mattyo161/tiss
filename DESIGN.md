@@ -22,7 +22,7 @@ practices, without requiring them to read this document first.
    machine-readable way (`--manifest`); conventions are consistent enough
    that an agent can predict them. Humans and AI share one vocabulary.
 4. **Guide, never strand.** Missing tool? Offer to install it. No encryption
-   identity? Walk through creating one. `tiss tiss doctor` reports state
+   identity? Walk through creating one. `tiss self doctor` reports state
    with hints, not just failures.
 5. **Pipes are the composition model.** Commands stream jsonl by default so
    everything chains through `jq` and friends.
@@ -169,7 +169,7 @@ full-power overlay. `TISS_PATH` lists trees most-specific first; the core
 (`$TISS_HOME`) is always last. First tree with a script match wins —
 overlays may shadow core commands. Help, `--manifest` and completions
 merge all trees (entries tagged with their source tree; shadowed entries
-dropped). `tiss tiss tree add|remove|list` manages the stack, persisted as
+dropped). `tiss self tree add|remove|list` manages the stack, persisted as
 `cfg TISS_PATH ...` in `~/.config/tiss/config.sh`; a `TISS_PATH` env var
 overrides entirely.
 
@@ -184,7 +184,8 @@ definitions override.
 
 | Date | Decision |
 | --- | --- |
-| 2026-07-13 | Overlay system: TISS_PATH most-specific-first, overlay wins, full-power trees (scripts+config+libs); `cfg` first-wins semantics make env > user > specific > core; managed via `tiss tiss tree` |
+| 2026-07-13 | Meta-commands live under `self` (`tiss self doctor|test|tree|completion`), rustup-style: top-level names stay free for passthrough tools (`tree`, `test` are real binaries), no `tiss tiss` stutter, reads clean through aliases (`x self doctor`). Renamed from the original `tiss` namespace pre-adoption, no compat path |
+| 2026-07-13 | Overlay system: TISS_PATH most-specific-first, overlay wins, full-power trees (scripts+config+libs); `cfg` first-wins semantics make env > user > specific > core; managed via `tiss self tree` |
 | 2026-07-13 | No TISS_ENV environment concept yet — AWS_PROFILE-style env vars already carry context and cacheExec keys on them; revisit when a wrapper needs it |
 | 2026-07-13 | Wrapper library launches with git, db (encrypted-creds pattern), terraform (hard plan-file discipline, no force flag) — aws deferred |
 | 2026-07-13 | Distribution: semver tags + curl-able install.sh + CONTRIBUTING; brew tap deferred until the interface settles |
@@ -198,19 +199,19 @@ definitions override.
 | 2026-07-12 | Lazy tool install delegated to mise |
 | 2026-07-12 | rmAfter: state in `$TISS_STATE` (default `~/.local/state/tiss`), files only (never recurses); reap on rmAfter execution + pidfile-tracked monitor that retires when idle (not on every dispatch) |
 | 2026-07-13 | rmAfter deletion allowlist (home + tmp default, `TISS_RMAFTER_PATHS` to customize), enforced at schedule and reap time — planted symlinks are dropped, never followed |
-| 2026-07-13 | Shell completions: live from the tree via `--complete`/`--complete-zsh`, emitted by `tiss tiss completion <bash\|zsh>`, argv[0]-aware |
+| 2026-07-13 | Shell completions: live from the tree via `--complete`/`--complete-zsh`, emitted by `tiss self completion <bash\|zsh>`, argv[0]-aware |
 | 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
 | 2026-07-13 | Dispatcher preflights `# @needs` deps before exec; `--help` NEVER installs anything (asking about a command must be free) |
 | 2026-07-13 | `ensureTool`: mise first, brew fallback for packages outside mise's registry (found via miller); one name-mapping function serves both |
 | 2026-07-13 | Polyglot leaf convention: stdlib-only python leaves use plain `#!/usr/bin/env python3`; leaves needing third-party packages use uv + PEP 723 inline deps (`json2xlsx`). `# @` annotations work unchanged in python comments |
 | 2026-07-13 | `dt` is a namespace (`tiss dt parse`), leaving room for `dt fmt`, `dt add`, ... |
-| 2026-07-13 | Tests: dependency-free bash harness (no bats), isolated `TISS_DATA`/`TISS_STATE` per file, `tiss tiss test` runner; CI = shellcheck + suite on ubuntu & macos |
+| 2026-07-13 | Tests: dependency-free bash harness (no bats), isolated `TISS_DATA`/`TISS_STATE` per file, `tiss self test` runner; CI = shellcheck + suite on ubuntu & macos |
 | 2026-07-13 | Portability probing order: GNU syntax first, BSD fallback (GNU `stat -f` silently prints filesystem info instead of erroring — CI caught it) |
 
 ## Open questions
 
 - Cache eviction: stale cacheExec entries linger until overwritten —
-  a `tiss tiss gc` sweep may be worth adding.
+  a `tiss self gc` sweep may be worth adding.
 - Manifest schema versioning; `env`/side-effect annotations.
 - Distribution: git clone + symlink today; brew tap / installer later.
 - Reaper via launchd/systemd user units: would survive reboots (schedules

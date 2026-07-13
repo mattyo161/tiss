@@ -58,14 +58,14 @@ curl -fsSL https://raw.githubusercontent.com/mattyo161/tiss/main/install.sh | ba
 ```
 
 (or clone + symlink `bin/tiss` yourself — the installer just automates
-that plus `tiss tiss doctor`.)
+that plus `tiss self doctor`.)
 
 Tab completion (candidates come live from the tree — new scripts complete
 immediately):
 
 ```sh
-eval "$(tiss tiss completion zsh)"    # ~/.zshrc, after compinit
-eval "$(tiss tiss completion bash)"   # ~/.bashrc
+eval "$(tiss self completion zsh)"    # ~/.zshrc, after compinit
+eval "$(tiss self completion bash)"   # ~/.bashrc
 ```
 
 Call it whatever you like — the CLI follows the name of its symlink/alias:
@@ -89,7 +89,7 @@ timestamp form — so an agent that learns one command has learned them all.
 ## Development
 
 ```sh
-tiss tiss test      # dependency-free suite, 174 assertions and counting
+tiss self test      # dependency-free suite, 174 assertions and counting
 ```
 
 CI runs shellcheck plus the suite on ubuntu and macos. Design decisions,
@@ -97,7 +97,7 @@ conventions, and the roadmap live in [DESIGN.md](DESIGN.md); how to add
 commands and the house rules live in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Company-private script trees layer over the core without forking:
-`tiss tiss tree add ~/work/acme-tiss` (see DESIGN.md "Overlay trees").
+`tiss self tree add ~/work/acme-tiss` (see DESIGN.md "Overlay trees").
 
 ## License
 
