@@ -54,10 +54,11 @@ you to the next step.
 ## Install
 
 ```sh
-git clone https://github.com/mattyo161/tiss.git
-ln -s "$PWD/tiss/bin/tiss" /usr/local/bin/tiss
-tiss tiss doctor    # checks your setup, tells you what (if anything) to fix
+curl -fsSL https://raw.githubusercontent.com/mattyo161/tiss/main/install.sh | bash
 ```
+
+(or clone + symlink `bin/tiss` yourself — the installer just automates
+that plus `tiss tiss doctor`.)
 
 Tab completion (candidates come live from the tree — new scripts complete
 immediately):
@@ -88,11 +89,15 @@ timestamp form — so an agent that learns one command has learned them all.
 ## Development
 
 ```sh
-tiss tiss test      # dependency-free suite, 114 assertions and counting
+tiss tiss test      # dependency-free suite, 174 assertions and counting
 ```
 
 CI runs shellcheck plus the suite on ubuntu and macos. Design decisions,
-conventions, and the roadmap live in [DESIGN.md](DESIGN.md).
+conventions, and the roadmap live in [DESIGN.md](DESIGN.md); how to add
+commands and the house rules live in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Company-private script trees layer over the core without forking:
+`tiss tiss tree add ~/work/acme-tiss` (see DESIGN.md "Overlay trees").
 
 ## License
 
