@@ -157,7 +157,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `learnExec` | done | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to `$TISS_STATE/history.log` — teaches users what scripts actually run. Sanitizer redacts secret-looking flags, `key=value` pairs, AWS access keys; display only, real argv runs untouched |
 | `cacheExec` | done | SHA-256 of argv + significant env vars (defaults cover AWS/GCP/kube context; extend via `TISS_CACHE_ENV`) keys a `saveData`-backed cache; `--duration` (default 1h), `--refresh`, `--encrypt`, `--no-gzip`; failing commands are never cached |
 | `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon |
-| `bkup` | planned | `cp -p` into a sibling `.bkup/` dir, named by the file's mtime |
+| `bkup` | done | `cp -p` (`-Rp` for dirs) into a sibling `.bkup/` dir, named `<name>.<mtime-ts>` — idempotent for unchanged files (same mtime = same name = skipped); prints backup paths to stdout |
 | fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
 | format conversions | planned | `csv2json`, `json2csv`, `md` tables, xlsx-with-formatting — thin façades over `jc`, `miller`, a python leaf for xlsx |
 

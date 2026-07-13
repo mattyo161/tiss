@@ -70,3 +70,9 @@ ts2js() { # ts2js <epoch> -> ISO8601 UTC (works with BSD and GNU date)
   date -u -r "$epoch" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null ||
     date -u -d "@$epoch" +"%Y-%m-%dT%H:%M:%SZ"
 }
+
+epoch2ts() { # epoch2ts <epoch> -> local compact timestamp (20260712T183042)
+  local epoch="${1:?usage: epoch2ts <epoch>}"
+  date -r "$epoch" +"%Y%m%dT%H%M%S" 2>/dev/null ||
+    date -d "@$epoch" +"%Y%m%dT%H%M%S"
+}
