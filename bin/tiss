@@ -115,6 +115,45 @@ manifest() {
   done
 }
 
+# --- shell completion ---------------------------------------------------------
+# Called by the completion functions emitted by `tiss tiss completion`:
+#   tiss --complete <completed words...>       plain candidates (bash)
+#   tiss --complete-zsh <completed words...>   name:description pairs (zsh)
+# Walks the tree with the words typed so far and lists what could come next.
+shellComplete() {
+  local mode="$1"
+  shift
+  local node="$TISS_SCRIPTS" w
+  for w in "$@"; do
+    [ -n "$w" ] || continue
+    if [ -d "$node/$w" ]; then
+      node="$node/$w"
+      continue
+    fi
+    # Inside a script's (or a passthrough tool's) own args — nothing to add.
+    return 0
+  done
+  local entry name
+  for entry in "$node"/*; do
+    [ -e "$entry" ] || continue
+    name="$(basename "$entry")"
+    if [ -d "$entry" ]; then
+      if [ "$mode" = "zsh" ]; then
+        printf '%s:%s\n' "$name" "($(basename "$entry") commands)"
+      else
+        printf '%s\n' "$name"
+      fi
+    elif [ -f "$entry" ] && [ -x "$entry" ]; then
+      name="${name%.*}"
+      if [ "$mode" = "zsh" ]; then
+        printf '%s:%s\n' "$name" "$(meta "$entry" description)"
+      else
+        printf '%s\n' "$name"
+      fi
+    fi
+  done
+}
+
 # --- passthrough -------------------------------------------------------------
 passthrough() { # passthrough <tool> [args...] — behave as if called natively
   local tool="$1"
@@ -132,6 +171,16 @@ main() {
       ;;
     --manifest)
       manifest
+      exit 0
+      ;;
+    --complete)
+      shift
+      shellComplete plain "$@"
+      exit 0
+      ;;
+    --complete-zsh)
+      shift
+      shellComplete zsh "$@"
       exit 0
       ;;
   esac

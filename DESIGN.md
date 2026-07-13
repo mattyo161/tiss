@@ -156,7 +156,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `saveData` / `readData` | done | Named pipe-friendly data store (see "Data store") |
 | `learnExec` | done | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to `$TISS_STATE/history.log` — teaches users what scripts actually run. Sanitizer redacts secret-looking flags, `key=value` pairs, AWS access keys; display only, real argv runs untouched |
 | `cacheExec` | done | SHA-256 of argv + significant env vars (defaults cover AWS/GCP/kube context; extend via `TISS_CACHE_ENV`) keys a `saveData`-backed cache; `--duration` (default 1h), `--refresh`, `--encrypt`, `--no-gzip`; failing commands are never cached |
-| `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon |
+| `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon. Deletion allowlist: only paths under home + tmp (or `TISS_RMAFTER_PATHS`) are ever deleted, enforced at schedule AND reap time |
 | `bkup` | done | `cp -p` (`-Rp` for dirs) into a sibling `.bkup/` dir, named `<name>.<mtime-ts>` — idempotent for unchanged files (same mtime = same name = skipped); prints backup paths to stdout |
 | fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
 | format conversions | planned | `csv2json`, `json2csv`, `md` tables, xlsx-with-formatting — thin façades over `jc`, `miller`, a python leaf for xlsx |
@@ -173,6 +173,8 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | 2026-07-12 | Compression before encryption, always |
 | 2026-07-12 | Lazy tool install delegated to mise |
 | 2026-07-12 | rmAfter: state in `$TISS_STATE` (default `~/.local/state/tiss`), files only (never recurses); reap on rmAfter execution + pidfile-tracked monitor that retires when idle (not on every dispatch) |
+| 2026-07-13 | rmAfter deletion allowlist (home + tmp default, `TISS_RMAFTER_PATHS` to customize), enforced at schedule and reap time — planted symlinks are dropped, never followed |
+| 2026-07-13 | Shell completions: live from the tree via `--complete`/`--complete-zsh`, emitted by `tiss tiss completion <bash\|zsh>`, argv[0]-aware |
 | 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
 
 ## Open questions
@@ -184,4 +186,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
   company-private script trees (overlay search path? `TISS_PATH`?).
 - Manifest schema versioning; `env`/side-effect annotations.
 - Distribution: git clone + symlink today; brew tap / installer later.
-- Shell completions (generate from the tree — should be nearly free).
+- Reaper via launchd/systemd user units: would survive reboots (schedules
+  currently wait for the next rmAfter call after a reboot). Must stay a
+  *user* unit — the reaper needs the user's own permissions to clean up
+  the files it created.

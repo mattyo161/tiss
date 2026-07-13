@@ -29,6 +29,24 @@ tissRmAfterDir() {
   echo "$(tissStateDir)/rmAfter"
 }
 
+# Deletion allowlist: rmAfter will only ever delete files under these
+# colon-separated prefixes (TISS_RMAFTER_PATHS overrides). Defaults cover
+# the user's home and the usual tmp locations (macOS TMPDIR lives under
+# /var/folders). Checked at schedule time (friendly error) AND at reap time
+# (defense in depth: a symlink planted in the state dir pointing at
+# /etc/anything gets dropped, never followed).
+tissRmAfterAllowed() { # tissRmAfterAllowed <abs-path> -> 0 if deletable
+  local target="$1" prefix
+  local allow="${TISS_RMAFTER_PATHS:-$HOME:${TMPDIR:-/tmp}:/tmp:/private/tmp:/var/folders:/private/var/folders}"
+  local IFS=':'
+  for prefix in $allow; do
+    [ -n "$prefix" ] || continue
+    prefix="${prefix%/}"
+    case "$target" in "$prefix"/*) return 0 ;; esac
+  done
+  return 1
+}
+
 rmAfter() { # rmAfter <duration> <file...>
   local spec="${1:-}"
   shift || true
@@ -59,6 +77,10 @@ rmAfter() { # rmAfter <duration> <file...>
       /*) abs="$f" ;;
       *) abs="$(cd -P "$(dirname "$f")" && pwd)/$(basename "$f")" ;;
     esac
+    if ! tissRmAfterAllowed "$abs"; then
+      logError "rmAfter: '$abs' is outside the deletable paths (home + tmp by default; set TISS_RMAFTER_PATHS to customize)"
+      return 2
+    fi
     # Epoch prefix makes schedules sort chronologically; suffix avoids
     # collisions when scheduling several files in the same second.
     ln -s "$abs" "$dir/$when.$$.$n.$RANDOM"
@@ -84,7 +106,11 @@ tissReapRmAfter() { # delete past-due files and their schedule symlinks
     [ "$when" -le "$now" ] || continue
 
     target="$(readlink "$link")"
-    if [ -d "$target" ]; then
+    if ! tissRmAfterAllowed "$target"; then
+      # A schedule pointing outside the allowlist never came from rmAfter —
+      # drop it and touch nothing.
+      logWarn "rmAfter: refusing to delete '$target' (outside deletable paths) — schedule dropped"
+    elif [ -d "$target" ]; then
       # Never recursively delete: a directory appearing where a file was
       # scheduled is suspicious — drop the schedule, keep the directory.
       logWarn "rmAfter: skipping '$target' (directory now; was scheduled as a file)"
