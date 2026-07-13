@@ -19,3 +19,4 @@ fi
 . "$TISS_LIB/tools.sh"
 . "$TISS_LIB/crypt.sh"
 . "$TISS_LIB/data.sh"
+. "$TISS_LIB/rmafter.sh"

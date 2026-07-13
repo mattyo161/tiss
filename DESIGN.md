@@ -156,7 +156,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `saveData` / `readData` | done | Named pipe-friendly data store (see "Data store") |
 | `learnExec` | planned | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to a history log — teaches users what scripts actually run |
 | `cacheExec` | planned | SHA digest of argv + declared significant env vars (e.g. `AWS_PROFILE`) keys a `saveData`-backed cache; `--duration` (default 1h), `--encrypt`, `--gzip` |
-| `rmAfter` | planned | Deferred deletion (`rmAfter 15s <tmpfile>`): timestamp-prefixed symlinks in a `.rmAfter` dir, swept opportunistically on every tiss invocation |
+| `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`, swept in the background on every tiss invocation — no daemon |
 | `bkup` | planned | `cp -p` into a sibling `.bkup/` dir, named by the file's mtime |
 | fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
 | format conversions | planned | `csv2json`, `json2csv`, `md` tables, xlsx-with-formatting — thin façades over `jc`, `miller`, a python leaf for xlsx |
@@ -172,6 +172,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | 2026-07-12 | Encryption: age with tiss-managed identity + per-session unlock (ssh-agent can't decrypt) |
 | 2026-07-12 | Compression before encryption, always |
 | 2026-07-12 | Lazy tool install delegated to mise |
+| 2026-07-12 | rmAfter: state in `$TISS_STATE` (default `~/.local/state/tiss`), files only (never recurses), opportunistic background reaper in the dispatcher |
 | 2026-07-12 | Data store: `$TISS_DATA` (default `~/.local/share/tiss/data`), one file per name, tmp+atomic rename, `/`-namespaced names |
 
 ## Open questions
