@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2012,SC2015,SC2016  # intentional test idioms: ls-count, A&&B||C with safe B, literal $ in inner shells
 # Tests for lib/rmafter.sh — scheduling, reaping, monitor lifecycle, allowlist.
 . "$(dirname "$0")/harness.sh"
 

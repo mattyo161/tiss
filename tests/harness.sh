@@ -9,7 +9,7 @@
 set -u
 
 TISS_TEST_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TISS_BIN="$TISS_TEST_ROOT/bin/tiss"
+export TISS_BIN="$TISS_TEST_ROOT/bin/tiss" # used by the test files sourcing this
 
 # Isolated, throwaway state per test file.
 TISS_TEST_TMP="$(mktemp -d)"

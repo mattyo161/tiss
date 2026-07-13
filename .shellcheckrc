@@ -1,0 +1,3 @@
+# tiss shellcheck config
+# SC1091: sourced files resolve via $TISS_LIB at runtime; not statically followable
+disable=SC1091

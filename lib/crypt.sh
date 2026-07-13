@@ -63,7 +63,8 @@ tissEnsureIdentity() { # create the tiss identity interactively if absent
 }
 
 tissSessionDir() { # per-user 0700 session dir for unlocked material
-  local dir="${TMPDIR:-/tmp}/tiss-$(id -u)"
+  local dir
+  dir="${TMPDIR:-/tmp}/tiss-$(id -u)"
   mkdir -p "$dir"
   chmod 700 "$dir"
   echo "$dir"

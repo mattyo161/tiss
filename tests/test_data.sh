@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2012,SC2015,SC2016  # intentional test idioms: ls-count, A&&B||C with safe B, literal $ in inner shells
 # Tests for lib/data.sh — saveData/readData round-trips and guarantees.
 . "$(dirname "$0")/harness.sh"
 
@@ -31,7 +32,7 @@ assertExit "readData missing name" 1 readData nope
 # No readable partial files mid-write: tmp name never matches a readable variant.
 { echo start; sleep 0.4; echo end; } | saveData slow &
 sleep 0.15
-visible="$(cd "$TISS_DATA" 2>/dev/null && ls | grep -c '^slow\.gz$' || true)"
+[ -f "$TISS_DATA/slow.gz" ] && visible=1 || visible=0
 assertEq "nothing readable mid-write" 0 "$visible"
 wait
 assertEq "atomic publish after write" "start end" "$(readData slow | tr '\n' ' ' | sed 's/ $//')"
