@@ -159,7 +159,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon. Deletion allowlist: only paths under home + tmp (or `TISS_RMAFTER_PATHS`) are ever deleted, enforced at schedule AND reap time |
 | `bkup` | done | `cp -p` (`-Rp` for dirs) into a sibling `.bkup/` dir, named `<name>.<mtime-ts>` — idempotent for unchanged files (same mtime = same name = skipped); prints backup paths to stdout |
 | format conversions | done | `csv2json`/`tsv2json`/`json2csv`/`json2tsv`/`json2md` as mlr façades (jsonl-first); `json2xlsx` is a python leaf via uv + PEP 723 inline deps — bold frozen header, comma number formats, real dates |
-| fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
+| fuzzy date parsing | done | `tiss dt parse`: python leaf (stdlib only), format battery + inference — 2-digit years 00-30→2000s/31-99→1900s, weekday overrides century, missing year resolves nearest-to-now; jsonl out, `--epoch/--iso/--ts` plain modes, stdin line mode |
 
 ## Decision log
 
