@@ -139,7 +139,7 @@ data dir (`$TISS_DATA`, default `~/.local/share/tiss/data`);
 (version-pinned, cross-platform, no sudo — and bootstrappable itself).
 `TISS_AUTO_INSTALL=ask|always|never` controls prompting. A small mapping
 handles command-vs-package names (`rg` -> `ripgrep`). Scripts declare deps
-with `# @needs`, enabling preflight.
+with `# @needs`; the dispatcher preflights them before exec (except for --help). Fallback to brew for tools outside mise's registry (e.g. miller).
 
 ### jq & jsonl — jq is a hard requirement
 
@@ -158,8 +158,8 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `cacheExec` | done | SHA-256 of argv + significant env vars (defaults cover AWS/GCP/kube context; extend via `TISS_CACHE_ENV`) keys a `saveData`-backed cache; `--duration` (default 1h), `--refresh`, `--encrypt`, `--no-gzip`; failing commands are never cached |
 | `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon. Deletion allowlist: only paths under home + tmp (or `TISS_RMAFTER_PATHS`) are ever deleted, enforced at schedule AND reap time |
 | `bkup` | done | `cp -p` (`-Rp` for dirs) into a sibling `.bkup/` dir, named `<name>.<mtime-ts>` — idempotent for unchanged files (same mtime = same name = skipped); prints backup paths to stdout |
+| format conversions | done | `csv2json`/`tsv2json`/`json2csv`/`json2tsv`/`json2md` as mlr façades (jsonl-first); `json2xlsx` is a python leaf via uv + PEP 723 inline deps — bold frozen header, comma number formats, real dates |
 | fuzzy date parsing | planned | Multi-format parse with century/year inference — real logic, likely a python leaf, same conventions replicated per-language |
-| format conversions | planned | `csv2json`, `json2csv`, `md` tables, xlsx-with-formatting — thin façades over `jc`, `miller`, a python leaf for xlsx |
 
 ## Decision log
 

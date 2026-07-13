@@ -10,9 +10,10 @@
 #   always  install without asking
 #   never   fail with instructions instead of installing
 #
-tissRegistryName() { # command name -> mise registry package name
+tissRegistryName() { # command name -> package name (mise registry / brew)
   case "$1" in
     rg) echo ripgrep ;;
+    mlr) echo miller ;;
     *) echo "$1" ;;
   esac
 }
@@ -24,8 +25,8 @@ ensureTool() { # ensureTool <name> -> 0 if available (installing if needed)
   local pkg
   pkg="$(tissRegistryName "$tool")"
 
-  if ! command -v mise >/dev/null 2>&1; then
-    logError "'$tool' is not installed, and mise is not available to install it."
+  if ! command -v mise >/dev/null 2>&1 && ! command -v brew >/dev/null 2>&1; then
+    logError "'$tool' is not installed, and neither mise nor brew is available to install it."
     logError "Install mise (https://mise.jdx.dev) to enable auto-install, or install '$tool' manually."
     return 127
   fi
@@ -40,7 +41,7 @@ ensureTool() { # ensureTool <name> -> 0 if available (installing if needed)
       # Prompt on the controlling terminal so pipelines are unaffected.
       if [ -r /dev/tty ] && [ -w /dev/tty ]; then
         local reply=""
-        printf "%s: '%s' is not installed. Install %s with mise now? [Y/n] " \
+        printf "%s: '%s' is not installed. Install %s now? [Y/n] " \
           "${TISS_NAME:-tiss}" "$tool" "$pkg" >/dev/tty
         IFS= read -r reply </dev/tty || reply=""
         case "$reply" in
@@ -53,11 +54,20 @@ ensureTool() { # ensureTool <name> -> 0 if available (installing if needed)
       ;;
   esac
 
-  logInfo "Installing $pkg via mise..."
-  mise use -g "$pkg@latest" >&2 || {
-    logError "mise failed to install $pkg"
+  # mise first (version-pinned, no sudo); brew fallback for tools outside
+  # mise's registry (e.g. miller).
+  if command -v mise >/dev/null 2>&1 && mise use -g "$pkg@latest" >/dev/null 2>&1; then
+    logInfo "Installed $pkg via mise."
+  elif command -v brew >/dev/null 2>&1; then
+    logInfo "Installing $pkg via brew..."
+    brew install "$pkg" >&2 || {
+      logError "could not install $pkg (mise registry miss, brew failed)"
+      return 127
+    }
+  else
+    logError "could not install $pkg via mise, and brew is not available"
     return 127
-  }
+  fi
 
   if ! command -v "$tool" >/dev/null 2>&1; then
     logError "Installed $pkg, but '$tool' is still not on PATH — is mise activated in your shell?"

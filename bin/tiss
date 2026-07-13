@@ -189,10 +189,23 @@ main() {
   local orig=("$@")
 
   # Walk the scripts tree, consuming one token per level.
+  local dep
   while [ $# -gt 0 ]; do
     case "$1" in -*) break ;; esac # flags never route
     if script="$(findScript "$node" "$1")"; then
       shift
+      # Preflight: install whatever the script declares via `# @needs`
+      # before it runs — this is what lets a leaf be python-via-uv, or
+      # lean on mlr/age/anything, and still guide a fresh machine.
+      # (Asking for help never installs anything.)
+      case "${1:-}" in
+        -h | --help) ;;
+        *)
+          for dep in $(meta "$script" needs); do
+            ensureTool "$dep" || exit 127
+          done
+          ;;
+      esac
       exec "$script" "$@"
     elif [ -d "$node/$1" ]; then
       node="$node/$1"

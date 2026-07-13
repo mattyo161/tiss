@@ -24,5 +24,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: install miller
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update -q && sudo apt-get install -y miller
+          else
+            brew install miller
+          fi
       - name: run test suite
         run: tests/run.sh
