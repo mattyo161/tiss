@@ -27,9 +27,35 @@ tissCommandAlias() { # namespace/short name -> real command for passthrough
   esac
 }
 
-ensureTool() { # ensureTool <name> -> 0 if available (installing if needed)
+# Passthrough installs are gated by an allowlist: tools declared via
+# `# @needs` are implicitly trusted (the declaring script is already
+# running with your permissions), but a mistyped passthrough command must
+# never become an "install this package? [Y/n]" prompt. Extend with
+# TISS_INSTALL_ALLOW (space-separated names) in your config.
+TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gh git go jc jq mise mlr node pstree python3 rg ruby shellcheck terraform tree uv watch"
+
+tissInstallAllowed() { # tissInstallAllowed <tool> -> 0 if passthrough-installable
+  local t
+  for t in $TISS_INSTALL_ALLOW_DEFAULT ${TISS_INSTALL_ALLOW:-}; do
+    [ "$t" = "$1" ] && return 0
+  done
+  return 1
+}
+
+ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if needed)
+  local gated=0
+  if [ "$1" = "--gated" ]; then
+    gated=1
+    shift
+  fi
   local tool="$1"
   command -v "$tool" >/dev/null 2>&1 && return 0
+
+  if [ "$gated" = 1 ] && ! tissInstallAllowed "$tool"; then
+    logError "'$tool' is not installed, and it's not on the passthrough install allowlist."
+    logError "install it yourself, or allow it in your config: cfg TISS_INSTALL_ALLOW \"$tool\""
+    return 127
+  fi
 
   local pkg
   pkg="$(tissRegistryName "$tool")"

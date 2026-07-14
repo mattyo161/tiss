@@ -314,7 +314,7 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
   set -- $alias_cmd "$@"
   local tool="$1"
   shift
-  ensureTool "$tool" || exit 127
+  ensureTool --gated "$tool" || exit 127
   exec "$tool" "$@"
 }
 
@@ -389,17 +389,24 @@ main() {
     fi
   done 3< <(tissTrees)
 
-  # Landed exactly on a namespace (`tiss git`) in any tree: merged help.
-  local ns=() all_dirs=1 w
+  # Landed on a namespace (`tiss git`), or asked one for help
+  # (`tiss self --help`, `tiss self help`): merged namespace help.
+  # Any OTHER flag (`tiss git --version`) still passes through natively.
+  local ns=() w trailing=""
   for w in "$@"; do
-    case "$w" in -*)
-      all_dirs=0
-      break
-      ;;
+    case "$w" in
+      -h | --help | help)
+        trailing="help"
+        break
+        ;;
+      -*)
+        trailing="flag"
+        break
+        ;;
+      *) ns+=("$w") ;;
     esac
-    ns+=("$w")
   done
-  if [ "$all_dirs" = 1 ] && [ ${#ns[@]} -gt 0 ]; then
+  if [ ${#ns[@]} -gt 0 ] && [ "$trailing" != "flag" ]; then
     local nspath
     nspath="$(printf '/%s' "${ns[@]}")"
     while IFS= read -r tree; do

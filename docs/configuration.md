@@ -29,6 +29,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | --- | --- | --- |
 | `TISS_AUTO_INSTALL` | `ask` | Missing-tool behavior at passthrough/`@needs` time: `ask` prompts, `always` installs silently, `never` refuses with instructions |
 | `TISS_LOG_LEVEL` | `INFO` | stderr verbosity: `ERROR` \| `WARN` \| `INFO` \| `DEBUG` |
+| `TISS_INSTALL_ALLOW` | empty | Extra tools passthrough may auto-install, beyond the curated built-in set (age, git, jq, rg, terraform, ...). `@needs`-declared tools are always allowed — this gates only commands you type |
 | `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss self tree add` (persists it here for you) |
 | `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
 | `TISS_STATE` | `~/.local/state/tiss` | State: `rmAfter` schedules, the `learnExec` history log |

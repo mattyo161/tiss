@@ -31,6 +31,20 @@ assertEq "passthrough echo" "hello" "$("$TISS_BIN" echo hello)"
 assertExit "passthrough exit status" 1 "$TISS_BIN" false
 assertExit "missing tool without mise install" 127 env TISS_AUTO_INSTALL=never "$TISS_BIN" definitely-not-a-real-tool-xyz
 
+# Namespace + help flag = namespace help, never an install prompt
+# (regression: `tiss self --help` once offered to install 'self').
+assertMatch "namespace --help shows help" 'usage: tiss self' "$("$TISS_BIN" self --help)"
+assertMatch "namespace -h shows help" 'usage: tiss self' "$("$TISS_BIN" self -h)"
+assertMatch "namespace trailing help word" 'usage: tiss git' "$("$TISS_BIN" git help)"
+assertExit "namespace + other flags still pass through" 1 "$TISS_BIN" false --version
+
+# Passthrough installs are gated by the allowlist; @needs never is.
+gated="$(TISS_AUTO_INSTALL=always "$TISS_BIN" not-a-listed-tool-xyz 2>&1 || true)"
+assertMatch "unlisted tool refused even with always" 'allowlist' "$gated"
+assertExit "unlisted tool exits 127" 127 env TISS_AUTO_INSTALL=always "$TISS_BIN" not-a-listed-tool-xyz
+allowed="$(TISS_INSTALL_ALLOW=not-a-listed-tool-xyz TISS_AUTO_INSTALL=never "$TISS_BIN" not-a-listed-tool-xyz 2>&1 || true)"
+assertMatch "TISS_INSTALL_ALLOW extends the gate" 'TISS_AUTO_INSTALL=never' "$allowed"
+
 # Completion.
 top="$("$TISS_BIN" --complete "")"
 assertMatch "completion lists encrypt" '(^|\n)encrypt(\n|$)' "$top"

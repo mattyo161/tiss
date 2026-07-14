@@ -46,7 +46,10 @@ If a script matched, its `# @needs` tools are installed first (never for
    merged help.
 6. **Passthrough** — behave as if the command were called natively:
    `tiss git push` execs `git push`. Missing tools are lazy-installed
-   (mise, then brew). Some names are aliased first (`tf` → `terraform`)
+   (mise, then brew) — but only if they're on the install allowlist
+   (curated built-ins + `TISS_INSTALL_ALLOW`), so a typo never becomes
+   an install prompt. `@needs`-declared tools skip the gate: the
+   declaring script is the trust anchor. Some names are aliased first (`tf` → `terraform`)
    for pure name mapping; anything needing logic belongs in a `_self`
    handler instead.
 
