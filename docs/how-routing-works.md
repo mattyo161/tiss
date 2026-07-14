@@ -30,15 +30,21 @@ is consumed per step:
    stops.**
 2. **Namespace descent** — a directory `scripts/a/`: descend, repeat
    with the next token.
-3. **Neither** — this tree is done; try the next tree.
+3. **Namespace handler** — if the token matches nothing but some level
+   of the walk had a `_self.*` file, the *deepest* one runs with all the
+   remaining args. `scripts/ssm/_self.sh` makes `tiss ssm <anything>`
+   yours, while `scripts/ssm/get.sh` still owns `tiss ssm get` exactly.
+   (A `_self` at the tree root would catch every unmatched command —
+   powerful; use deliberately.)
+4. **Neither** — this tree is done; try the next tree.
 
 If a script matched, its `# @needs` tools are installed first (never for
 `--help`), then it's exec'd. If no tree matched anything:
 
-4. **Namespace landing** — the tokens name a directory in some tree
+5. **Namespace landing** — the tokens name a directory in some tree
    (`tiss git` with `scripts/git/` existing): show that namespace's
    merged help.
-5. **Passthrough** — behave as if the command were called natively:
+6. **Passthrough** — behave as if the command were called natively:
    `tiss git push` execs `git push`. Missing tools are lazy-installed
    (mise, then brew). Some names are aliased first — `tf` → `terraform`,
    `ssm` → `aws ssm` — so `tiss ssm describe-parameters` runs
@@ -53,8 +59,12 @@ If a script matched, its `# @needs` tools are installed first (never for
   and the passthrough proceeds.
 - **A file beats a directory at the same level.** If both
   `scripts/ssm.sh` and `scripts/ssm/` exist, the file wins and the whole
-  `ssm/` namespace is shadowed. Pick one: a single script *or* a
-  namespace of subcommands.
+  `ssm/` namespace is shadowed. Want both a default action *and*
+  subcommands? Use a directory with a `_self.*` handler inside it —
+  that's the supported shape.
+- **Bare namespace = help, not the handler.** `tiss ssm` shows the
+  namespace's commands (with the handler described in the footer);
+  `tiss ssm anything` reaches the handler.
 - **First tree wins.** An overlay's `git/clone.sh` shadows the core's.
   `tiss self tree list` shows shadow counts; `--manifest` tags every
   command with its source tree.

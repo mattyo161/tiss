@@ -184,6 +184,9 @@ definitions override.
 
 | Date | Decision |
 | --- | --- |
+| 2026-07-14 | `_self.*` namespace handlers: deepest wins, exact scripts beat it, bare namespace still shows help; replaces the ssm passthrough alias with intent-routing (reads cached via cacheExec --encrypt, writes narrated via learnExec, writes NEVER cached) |
+| 2026-07-14 | Annotations parse from `#` and `//` comment styles; polyglot examples shipped for python/ruby/node/typescript/go (go via the `//usr/bin/env go run` polyglot line, ts via node type stripping) |
+| 2026-07-14 | doctor scans all trees for non-executable scripts (the near-miss trap, caught at checkup time too) |
 | 2026-07-14 | Near-miss detection: a would-match file that isn't executable errors with the chmod fix (exit 126) or warns-and-proceeds when a real binary exists — silent invisibility was the #1 new-user trap (Matt hit it) |
 | 2026-07-14 | `help` is a first-class word: `tiss help <cmd>` prefix form (dispatcher) and bare `help` as first arg to any script (help triad `-h\|--help\|help`) |
 | 2026-07-14 | Passthrough aliases may be multi-word (`ssm` -> `aws ssm`), so wrapper namespaces keep the whole underlying tool reachable |

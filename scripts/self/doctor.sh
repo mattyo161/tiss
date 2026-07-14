@@ -39,6 +39,24 @@ check "age (encryption engine)" "installs on first 'tiss encrypt', or: mise use 
 check "encryption identity" "created on first 'tiss encrypt'" test -s "$TISS_CONFIG/age/identity.age"
 check "on PATH as '$TISS_NAME'" "ln -s $TISS_HOME/bin/tiss /usr/local/bin/$TISS_NAME" command -v "$TISS_NAME"
 
+# Non-executable scripts are invisible to routing — the #1 authoring trap.
+nonexec=0
+while IFS= read -r tree; do
+  while IFS= read -r f; do
+    if [ ! -x "$f" ]; then
+      logWarn "not executable (invisible to routing): $f"
+      logWarn "  activate it with: chmod +x $f"
+      nonexec=$((nonexec + 1))
+    fi
+  done < <(find "$tree/scripts" -type f ! -name '.*' 2>/dev/null)
+done < <(tissTrees)
+if [ "$nonexec" -eq 0 ]; then
+  logInfo "ok: all tree scripts are executable"
+  ok=$((ok + 1))
+else
+  warn=$((warn + nonexec))
+fi
+
 if [ "$warn" -eq 0 ]; then
   logInfo "All $ok checks passed — you're all set."
 else

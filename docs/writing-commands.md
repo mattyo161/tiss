@@ -25,9 +25,19 @@ source "$TISS_LIB/init.sh"
 - **`source "$TISS_LIB/init.sh"`** loads the whole helper suite —
   `logInfo`, `learnExec`, `cacheExec`, `saveData`, `dur2s`, `cfg`, plus
   any overlay-tree helpers and layered config.
-- Python works identically — annotations are just `#` comments. Stdlib
-  only: plain `#!/usr/bin/env python3`. Third-party deps: uv + PEP 723
-  inline metadata (see `scripts/json2xlsx.py`).
+- Any language works — annotations parse from `#` *and* `//` comment
+  styles. Working examples in the core, one per runtime:
+  | script | language | trick |
+  | --- | --- | --- |
+  | `scripts/serve.py` | python | stdlib http.server as a command |
+  | `scripts/mkpass.rb` | ruby | SecureRandom passwords |
+  | `scripts/urlparse.js` | node | URL → jsonl |
+  | `scripts/jwt.ts` | typescript | node's native type stripping (>= 23.6) |
+  | `scripts/checkport.go` | go | `//usr/bin/env go run "$0" "$@"` polyglot first line |
+  | `scripts/json2xlsx.py` | python + deps | uv + PEP 723 inline metadata |
+- A `_self.*` file in a namespace directory handles every subcommand no
+  dedicated script owns (see the cookbook, pattern 5). Names starting
+  with `_` never appear in completions.
 
 ## Arg parsing: the house pattern
 

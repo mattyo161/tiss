@@ -64,9 +64,24 @@ assertMatch "tiss help <cmd> works" 'usage: tiss ssm get' "$("$TISS_BIN" help ss
 assertMatch "tiss help <namespace> works" 'usage: tiss git' "$("$TISS_BIN" help git)"
 assertExit "tiss help unknown errors" 2 "$TISS_BIN" help no-such-thing
 
-# multi-word alias: unmatched ssm subcommands become `aws ssm ...`.
-out="$("$TISS_BIN" ssm describe-parameters 2>/dev/null)"
-assertEq "ssm passthrough via multi-word alias" "aws-shim: ssm describe-parameters" "$out"
+# namespace handler (_self): reads cached, writes narrated, never cached.
+export TISS_SSM_CACHE_ENCRYPT=0 # no age identity in tests
+: >"$AWS_SHIM_LOG"
+o1="$("$TISS_BIN" ssm describe-parameters 2>/dev/null)"
+o2="$("$TISS_BIN" ssm describe-parameters 2>/dev/null)"
+assertEq "_self caches read verbs" 1 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+assertEq "_self cached output identical" "$o1" "$o2"
+"$TISS_BIN" ssm put-parameter --name /x --value 1 >/dev/null 2>&1
+"$TISS_BIN" ssm put-parameter --name /x --value 1 >/dev/null 2>&1
+assertEq "_self never caches writes" 3 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+learn="$("$TISS_BIN" ssm put-parameter --name /x --value 1 2>&1 >/dev/null)"
+assertMatch "_self narrates writes via LEARN" 'LEARN.*aws ssm put-parameter' "$learn"
+assertMatch "get.sh still beats the handler" 'usage: tiss ssm get' "$("$TISS_BIN" ssm get help)"
+ns_help="$("$TISS_BIN" ssm)"
+assertMatch "bare namespace still shows help" 'usage: tiss ssm' "$ns_help"
+assertMatch "handler described in help footer" 'Anything else: Any aws ssm subcommand' "$ns_help"
+comp="$("$TISS_BIN" --complete ssm)"
+assertEq "completion hides _self" "get" "$comp"
 
 # near-miss: a would-match file that isn't executable fails loudly...
 tree="$TISS_TEST_TMP/overlay"

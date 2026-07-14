@@ -9,11 +9,12 @@
 #   # @needs       git
 #
 meta() { # meta <file> <key> -> first value (empty if none)
-  sed -n "s/^# @$2[[:space:]]*//p" "$1" | head -n 1
+  # Both comment styles: `# @key` (sh/py/rb) and `// @key` (js/ts/go).
+  sed -n -e "s|^# @$2[[:space:]]*||p" -e "s|^// @$2[[:space:]]*||p" "$1" | head -n 1
 }
 
 metaAll() { # metaAll <file> <key> -> all values, one per line
-  sed -n "s/^# @$2[[:space:]]*//p" "$1"
+  sed -n -e "s|^# @$2[[:space:]]*||p" -e "s|^// @$2[[:space:]]*||p" "$1"
 }
 
 tissHelp() { # tissHelp <script> — render a script's annotations as --help text

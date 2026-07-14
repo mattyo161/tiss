@@ -74,13 +74,28 @@ Unrecognized args go straight to aws (`extra+=("$1")`), so
 `--max-results 5` or `--recursive` just work. Wrap the 90% case,
 never wall off the other 10%.
 
-## Pattern 5: keep the whole tool reachable
+## Pattern 5: a `_self` handler for everything else
 
 `scripts/ssm/` only defines `get` — so what happens to
-`tiss ssm describe-parameters`? A **passthrough alias** (`ssm` →
-`aws ssm` in `tissCommandAlias`) means every other subcommand runs
-natively. The wrapper adds; it never subtracts. (`tf` → `terraform`
-works the same way.)
+`tiss ssm describe-parameters`? The namespace's `_self.sh` handler
+catches every subcommand no dedicated script owns, and it's smart
+about intent:
+
+```bash
+case "${1:-}" in
+  get-* | describe-* | list-*)   # read-only: cache it, encrypted
+    cacheExec --duration "$TISS_SSM_CACHE_DURATION" --encrypt aws ssm "$@" ;;
+  *)                             # may mutate: NEVER cache, narrate it
+    learnExec aws ssm "$@" ;;
+esac
+```
+
+That last case is the important lesson: a blanket
+`cacheExec aws ssm "$@"` would cache `put-parameter` — a repeated write
+would silently *not run*. Route by intent: **reads get cached, writes
+get narrated, writes never get cached.** The wrapper adds; it never
+subtracts. (For dumb name mapping without logic, `tissCommandAlias`
+still exists: `tf` → `terraform`.)
 
 ## Pattern 6: grow it in your overlay first
 

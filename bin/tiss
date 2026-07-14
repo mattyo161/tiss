@@ -77,13 +77,22 @@ treeTag() { # treeTag <tree-root> -> short label for help/manifest
 
 # resolveInTree <scripts-root> <args...>
 # Walks one tree; on a script match sets RESOLVED_SCRIPT/RESOLVED_SHIFT.
+# A `_self.*` file in a namespace is that namespace's HANDLER: it catches
+# any unmatched subcommand (deepest one wins; exact scripts still beat it),
+# so `scripts/ssm/_self.sh` makes `tiss ssm <anything>` yours while
+# `scripts/ssm/get.sh` keeps owning `tiss ssm get`.
 RESOLVED_SCRIPT=""
 RESOLVED_SHIFT=0
 resolveInTree() {
-  local node="$1" consumed=0 script
+  local node="$1" consumed=0 script handler="" handler_consumed=0
   shift
-  while [ $# -gt 0 ]; do
-    case "$1" in -*) return 1 ;; esac # flags never route
+  while :; do
+    if script="$(findScript "$node" _self)"; then
+      handler="$script"
+      handler_consumed=$consumed
+    fi
+    [ $# -gt 0 ] || break
+    case "$1" in -*) break ;; esac # flags never route
     if script="$(findScript "$node" "$1")"; then
       RESOLVED_SCRIPT="$script"
       RESOLVED_SHIFT=$((consumed + 1))
@@ -93,9 +102,16 @@ resolveInTree() {
       consumed=$((consumed + 1))
       shift
     else
-      return 1
+      break
     fi
   done
+  # Unmatched tokens (or flags) remain: the deepest _self takes them all.
+  # Bare namespace landings ($# = 0) still get help, not the handler.
+  if [ -n "$handler" ] && [ $# -gt 0 ]; then
+    RESOLVED_SCRIPT="$handler"
+    RESOLVED_SHIFT=$handler_consumed
+    return 0
+  fi
   return 1
 }
 
@@ -116,6 +132,7 @@ showHelp() { # showHelp [namespace words...] — merged across all trees
       rel="${f#"$node"/}"
       rel="${rel%.*}"
       rel="${rel//\// }"
+      case "$rel" in _self | *" _self") continue ;; esac # handlers get the footer
       case "$seen" in *"
 $rel
 "*) continue ;; esac # shadowed by a more specific tree
@@ -130,7 +147,19 @@ $rel
   done < <(tissTrees)
   echo
   if [ -n "$ns" ]; then
-    echo "Anything else passes through to \`${ns%% *}\` itself."
+    # A _self handler owns everything unmatched in this namespace.
+    local handler=""
+    while IFS= read -r tree; do
+      if handler="$(findScript "$tree/scripts${ns:+/${ns// /\/}}" _self)"; then
+        break
+      fi
+      handler=""
+    done < <(tissTrees)
+    if [ -n "$handler" ]; then
+      echo "Anything else: $(meta "$handler" description)"
+    else
+      echo "Anything else passes through to \`${ns%% *}\` itself."
+    fi
   else
     echo "Anything else passes through to the underlying tool, installing it"
     echo "first if needed:  $TISS_NAME rg TODO   # installs ripgrep, runs it"
@@ -144,13 +173,24 @@ $rel
 # across trees; each entry carries its source tree, shadowed entries drop.
 manifest() {
   ensureTool jq || exit 127
-  local tree root f cmd seen="
+  local tree root f cmd type seen="
 "
   while IFS= read -r tree; do
     root="$tree/scripts"
     [ -d "$root" ] || continue
     while IFS= read -r f; do
       cmd="$(cmdOf "$root" "$f")"
+      type="scripted"
+      case "$cmd" in
+        _self)
+          cmd="*"
+          type="handler"
+          ;;
+        *" _self")
+          cmd="${cmd% _self} *"
+          type="handler"
+          ;;
+      esac
       case "$seen" in *"
 $cmd
 "*) continue ;; esac
@@ -158,6 +198,7 @@ $cmd
 "
       jq -cn \
         --arg command "$cmd" \
+        --arg type "$type" \
         --arg description "$(meta "$f" description)" \
         --arg usage "$(meta "$f" usage)" \
         --arg needs "$(meta "$f" needs)" \
@@ -165,7 +206,7 @@ $cmd
         --arg source "${f#"$tree"/}" \
         --arg tree "$(treeTag "$tree")" \
         '{command: $command,
-          type: "scripted",
+          type: $type,
           description: $description,
           usage: $usage,
           needs: ($needs | split(" ") | map(select(. != ""))),
@@ -203,6 +244,7 @@ shellComplete() {
     for entry in "$node"/*; do
       [ -e "$entry" ] || continue
       name="$(basename "$entry")"
+      case "$name" in _*) continue ;; esac # handlers/private files
       if [ -d "$entry" ]; then
         :
       elif [ -f "$entry" ] && [ -x "$entry" ]; then
