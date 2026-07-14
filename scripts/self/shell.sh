@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# @description Emit shell integration (makes `tiss self cd` pushd for real)
-# @usage eval "$(tiss self shell)"
-# @example eval "$(tiss self shell)"   # in ~/.zshrc or ~/.bashrc
+# @description Drop into an interactive tiss shell: helpers loaded, cwd = tiss home
+# @usage tiss self shell
+# @example tiss self shell
+# @example printf 'dur2s 1w1d\nexit\n' | tiss self shell   # scriptable too
 #
-# Emits a wrapper function named after however you invoke tiss (symlink
-# as `x` and it wraps `x`), intercepting `self cd` to pushd in YOUR
-# shell; everything else forwards to the real binary. popd returns.
+# A REPL for tiss development: every helper (logInfo, saveData, cacheExec,
+# dur2s, bkup, ...) is a first-class command at the prompt, overlay libs
+# and config are loaded, you start in $TISS_HOME, and the prompt says so.
+# Its own history file, so your experiments don't pollute shell history.
+# exit / ctrl-d drops you back exactly where you were.
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"
@@ -17,12 +20,21 @@ case "${1:-}" in
     ;;
 esac
 
-sed "s/__NAME__/$TISS_NAME/g" <<'WRAP'
-__NAME__() {
-  if [ "${1:-}" = "self" ] && [ "${2:-}" = "cd" ]; then
-    pushd "$(command __NAME__ self cd 2>/dev/null)" || return
-  else
-    command __NAME__ "$@"
-  fi
-}
-WRAP
+mkdir -p "$TISS_STATE"
+
+# The rc is a self-destructing temp file — dogfooding rmAfter: bash reads
+# it at startup, and it quietly vanishes a minute later.
+rcfile="$(mktemp)"
+cat >"$rcfile" <<RC
+# tiss dev shell rc (self-destructs via rmAfter)
+source "$TISS_LIB/init.sh"
+cd "$TISS_HOME"
+export PATH="$TISS_HOME/bin:\$PATH"
+export HISTFILE="$TISS_STATE/shell_history"
+PS1='\[\033[36m\]$TISS_NAME\[\033[0m\]> '
+echo "$TISS_NAME dev shell — helpers loaded: logInfo, saveData/readData/lsData, cacheExec, learnExec, dur2s, bkup, rmAfter, ..."
+echo "cwd: $TISS_HOME    (exit or ctrl-d to leave)"
+RC
+rmAfter 1m "$rcfile"
+
+exec bash --rcfile "$rcfile" -i

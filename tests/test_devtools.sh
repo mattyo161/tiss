@@ -56,14 +56,20 @@ else
   echo "  skip: git missing" >&2
 fi
 
-# --- self shell integration ---------------------------------------------------------
-emit="$("$TISS_BIN" self shell)"
-assertMatch "shell wrapper defines the function" '^tiss\(\)' "$emit"
-assertMatch "shell wrapper pushd's on self cd" 'pushd .*command tiss self cd' "$emit"
-assertMatch "shell wrapper forwards everything else" 'command tiss "\$@"' "$emit"
+# --- self init (rc integration) -------------------------------------------------------
+emit="$("$TISS_BIN" self init)"
+assertMatch "init wrapper defines the function" '^tiss\(\)' "$emit"
+assertMatch "init wrapper pushd's on self cd" 'pushd .*command tiss self cd' "$emit"
+assertMatch "init wrapper forwards everything else" 'command tiss "\$@"' "$emit"
 # and it's argv[0]-aware
 ln -sf "$TISS_BIN" "$TISS_TEST_TMP/nri"
-assertMatch "shell wrapper follows the alias" '^nri\(\)' "$("$TISS_TEST_TMP/nri" self shell)"
+assertMatch "init wrapper follows the alias" '^nri\(\)' "$("$TISS_TEST_TMP/nri" self init)"
+
+# --- self shell (the dev REPL) ---------------------------------------------------------
+repl="$(printf 'dur2s 1w1d\npwd\nexit\n' | "$TISS_BIN" self shell 2>/dev/null)"
+assertMatch "shell loads helpers" '691200' "$repl"
+assertMatch "shell starts in TISS_HOME" "$TISS_TEST_ROOT" "$repl"
+assertMatch "shell announces itself" 'dev shell' "$repl"
 
 # --- tmux suite (isolated socket via a shim) -----------------------------------------
 if command -v tmux >/dev/null 2>&1; then

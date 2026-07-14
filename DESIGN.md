@@ -184,7 +184,8 @@ definitions override.
 
 | Date | Decision |
 | --- | --- |
-| 2026-07-14 | `self cd` can't chdir the parent shell — `tiss self shell` emits an argv[0]-aware wrapper function (same emit pattern as completions) that intercepts `self cd` into a real pushd. dns/tmux/self-dev commands all learnExec-narrated; `tmux go` proves the interactive-guide pattern |
+| 2026-07-14 | `self cd` can't chdir the parent shell — `tiss self init` emits an argv[0]-aware wrapper function (same emit pattern as completions) that intercepts `self cd` into a real pushd. dns/tmux/self-dev commands all learnExec-narrated; `tmux go` proves the interactive-guide pattern |
+| 2026-07-14 | `tiss self shell` is the dev REPL: interactive bash with all helpers + overlay libs loaded, cwd = TISS_HOME, `tiss>` prompt (argv[0]-aware), own history file in TISS_STATE, rcfile self-destructs via rmAfter. Also scriptable: `printf 'dur2s 1w\nexit\n' \| tiss self shell` |
 | 2026-07-14 | Namespace + help flag shows tiss namespace help (`tiss self --help` was falling through to passthrough and offering to install 'self'); other flags still pass through natively |
 | 2026-07-14 | Passthrough installs gated by allowlist (curated built-ins + TISS_INSTALL_ALLOW): a typo must never become an install prompt. @needs-declared tools bypass the gate — the declaring script is the trust anchor |
 | 2026-07-14 | Configuration is self-documenting and self-enforcing: etc/config.sh.example is the settings registry (fully commented cfg lines = defaults), seeded to ~/.config/tiss/config.sh on install, parsed by `tiss self config` for effective values, and a test fails when code references a TISS_* var missing from the template. TISS_DATA/TISS_STATE became config-settable (dispatcher defaults now apply after config loads) |

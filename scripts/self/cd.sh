@@ -4,8 +4,8 @@
 # @example tiss self cd
 #
 # A child process can't change your shell's directory — so this prints
-# the path, and the shell integration (eval "$(tiss self shell)" in your
-# rc) turns `tiss self cd` into a real pushd; popd brings you back.
+# the path, and the rc integration (eval "$(tiss self init)" in your rc)
+# turns `tiss self cd` into a real pushd; popd brings you back.
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"
@@ -19,5 +19,5 @@ esac
 
 echo "$TISS_HOME"
 if [ -t 1 ]; then
-  logInfo "to make this a real pushd, add to your shell rc:  eval \"\$($TISS_NAME self shell)\""
+  logInfo "to make this a real pushd, add to your shell rc:  eval \"\$($TISS_NAME self init)\""
 fi
