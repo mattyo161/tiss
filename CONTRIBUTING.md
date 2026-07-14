@@ -64,6 +64,16 @@ Don't PR company-specific wrappers into the core — that's what overlay
 trees are for (`tiss self tree add ~/work/acme-tiss`, see DESIGN.md).
 Core wrappers encode *generic* best practice.
 
+## Commits & releases
+
+Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org)
+(CI enforces it): `feat: ...`, `fix: ...`, `docs:`/`test:`/`chore:`/...,
+with `!` or a `BREAKING CHANGE:` footer for majors. Releases are
+automated by release-please: merging its release PR bumps `version.txt`,
+updates `CHANGELOG.md`, tags, and publishes the GitHub release —
+`feat` bumps minor, `fix` bumps patch, breaking bumps major. Check the
+installed version any time with `tiss --version`.
+
 ## Decisions
 
 Non-obvious judgment calls get a row in DESIGN.md's decision log — date,

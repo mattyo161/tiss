@@ -381,6 +381,10 @@ main() {
       manifest
       exit 0
       ;;
+    --version | -V)
+      echo "$TISS_NAME $(cat "$TISS_HOME/version.txt" 2>/dev/null || echo dev) ($TISS_HOME)"
+      exit 0
+      ;;
     --complete)
       shift
       shellComplete plain "$@"

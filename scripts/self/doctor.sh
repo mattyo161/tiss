@@ -30,7 +30,7 @@ check() { # check <label> <hint> <command...>
   fi
 }
 
-logInfo "tiss home: $TISS_HOME (invoked as '$TISS_NAME')"
+logInfo "tiss $(cat "$TISS_HOME/version.txt" 2>/dev/null || echo dev) — home: $TISS_HOME (invoked as '$TISS_NAME')"
 
 check "bash" "how are you even running this?" command -v bash
 check "jq (required)" "run: mise use -g jq@latest" command -v jq
