@@ -153,7 +153,7 @@ Commands emit streaming jsonl by default; jq is the universal joint.
 | `ts`, `utc`, `dur2s`, `ts2js` | done | One time standard everywhere; `dur2s` parses `1w1d5h` |
 | `meta`, `metaAll`, `tissHelp` | done | Read `# @` annotations; render `--help` |
 | `ensureTool` | done | Lazy install via mise |
-| `saveData` / `readData` | done | Named pipe-friendly data store (see "Data store") |
+| `saveData` / `readData` / `lsData` | done | Named pipe-friendly data store (see "Data store"); `lsData [prefix]` lists entries as jsonl with logical name, gzip/encrypted flags, size, mtime |
 | `learnExec` | done | Prefix wrapper: echoes the (secret-sanitized) command to stderr as `[LEARN] ...` and appends to `$TISS_STATE/history.log` — teaches users what scripts actually run. Sanitizer redacts secret-looking flags, `key=value` pairs, AWS access keys; display only, real argv runs untouched |
 | `cacheExec` | done | SHA-256 of argv + significant env vars (defaults cover AWS/GCP/kube context; extend via `TISS_CACHE_ENV`) keys a `saveData`-backed cache; `--duration` (default 1h), `--refresh`, `--encrypt`, `--no-gzip`; failing commands are never cached |
 | `rmAfter` | done | Deferred deletion (`rmAfter 15s <tmpfile>`): epoch-prefixed symlinks in `$TISS_STATE/rmAfter`. Reaping happens on each rmAfter call plus a self-managing background monitor (pidfile-tracked, sleeps until next deadline capped at `TISS_RMAFTER_INTERVAL`=60s, exits when idle) — no permanent daemon. Deletion allowlist: only paths under home + tmp (or `TISS_RMAFTER_PATHS`) are ever deleted, enforced at schedule AND reap time |

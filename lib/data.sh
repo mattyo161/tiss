@@ -101,6 +101,47 @@ saveData() { # saveData [--gzip|--no-gzip] [--encrypt|--no-encrypt] <name>
   logDebug "saveData: wrote $base$ext"
 }
 
+lsData() { # lsData [prefix] -> jsonl: one record per saved name
+  local prefix="${1:-}" dir
+  dir="$(tissDataDir)"
+  [ -d "$dir" ] || return 0
+  ensureTool jq || return 127
+
+  local f rel name gz enc bytes mtime
+  while IFS= read -r f; do
+    rel="${f#"$dir"/}"
+    case "$rel" in *.tmp.*) continue ;; esac # in-flight saveData tmp files
+    # Unwind the extension chain to recover the logical name (see saveData).
+    name="$rel"
+    enc=false
+    gz=false
+    case "$name" in *.age)
+      enc=true
+      name="${name%.age}"
+      ;;
+    esac
+    case "$name" in *.gz)
+      gz=true
+      name="${name%.gz}"
+      ;;
+    esac
+    if [ -n "$prefix" ]; then
+      case "$name" in "$prefix"*) ;; *) continue ;; esac
+    fi
+    bytes="$(wc -c <"$f" | tr -d ' ')"
+    mtime="$(tissFileMtime "$f")"
+    jq -cn \
+      --arg name "$name" \
+      --argjson gzip "$gz" \
+      --argjson encrypted "$enc" \
+      --argjson bytes "$bytes" \
+      --arg modified "$(ts2js "$mtime")" \
+      --arg file "$rel" \
+      '{name: $name, gzip: $gzip, encrypted: $encrypted,
+        bytes: $bytes, modified: $modified, file: $file}'
+  done < <(find "$dir" -type f | sort)
+}
+
 readData() { # readData <name> -> stream contents to stdout
   local name=""
   while [ $# -gt 0 ]; do

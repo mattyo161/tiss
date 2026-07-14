@@ -29,6 +29,18 @@ assertExit "rejects .. traversal" 2 bash -c 'source "$TISS_LIB/init.sh"; echo x 
 assertExit "rejects absolute path" 2 bash -c 'source "$TISS_LIB/init.sh"; echo x | saveData /abs/path'
 assertExit "readData missing name" 1 readData nope
 
+# lsData: jsonl listing with logical names, attribute flags, prefix filter.
+ls_out="$(lsData)"
+assertEq "lsData lists all entries" 3 "$(printf '%s\n' "$ls_out" | wc -l | tr -d ' ')"
+assertMatch "lsData strips extensions to logical name" '"name":"big"' "$ls_out"
+assertEq "lsData flags gzip" true "$(printf '%s\n' "$ls_out" | jq -s '.[] | select(.name=="big") | .gzip')"
+assertEq "lsData flags plain" false "$(printf '%s\n' "$ls_out" | jq -s '.[] | select(.name=="greet") | .gzip')"
+assertEq "lsData prefix filter" "aws/params" "$(lsData aws/ | jq -r .name)"
+assertMatch "lsData reports bytes" '"bytes":[0-9]+' "$ls_out"
+touch "$TISS_DATA/ghost.tmp.abc123"
+assertEq "lsData hides in-flight tmp files" 3 "$(lsData | wc -l | tr -d ' ')"
+rm -f "$TISS_DATA/ghost.tmp.abc123"
+
 # No readable partial files mid-write: tmp name never matches a readable variant.
 { echo start; sleep 0.4; echo end; } | saveData slow &
 sleep 0.15
