@@ -7,7 +7,7 @@ set -euo pipefail
 source "$TISS_LIB/init.sh"
 
 case "${1:-}" in
-  -h | --help)
+  -h | --help | help)
     tissHelp "$0"
     exit 0
     ;;

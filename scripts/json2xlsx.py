@@ -58,7 +58,7 @@ def coerce(value):
 
 def main():
     args = sys.argv[1:]
-    if not args or args[0] in ("-h", "--help"):
+    if not args or args[0] in ("-h", "--help", "help"):
         print("usage: tiss json2xlsx <out.xlsx> [--sheet NAME]", file=sys.stderr)
         sys.exit(0 if args else 2)
 

@@ -127,7 +127,7 @@ cmdListAfterChange() {
 }
 
 case "${1:-list}" in
-  -h | --help)
+  -h | --help | help)
     tissHelp "$0"
     ;;
   list)

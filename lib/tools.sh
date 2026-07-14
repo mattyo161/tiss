@@ -18,9 +18,11 @@ tissRegistryName() { # command name -> package name (mise registry / brew)
   esac
 }
 
-tissCommandAlias() { # namespace/short name -> real binary for passthrough
+tissCommandAlias() { # namespace/short name -> real command for passthrough
+  # May be multi-word: `tiss ssm describe-parameters` -> `aws ssm ...`
   case "$1" in
     tf) echo terraform ;;
+    ssm) echo "aws ssm" ;;
     *) echo "$1" ;;
   esac
 }

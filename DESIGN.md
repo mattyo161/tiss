@@ -184,6 +184,10 @@ definitions override.
 
 | Date | Decision |
 | --- | --- |
+| 2026-07-14 | Near-miss detection: a would-match file that isn't executable errors with the chmod fix (exit 126) or warns-and-proceeds when a real binary exists — silent invisibility was the #1 new-user trap (Matt hit it) |
+| 2026-07-14 | `help` is a first-class word: `tiss help <cmd>` prefix form (dispatcher) and bare `help` as first arg to any script (help triad `-h\|--help\|help`) |
+| 2026-07-14 | Passthrough aliases may be multi-word (`ssm` -> `aws ssm`), so wrapper namespaces keep the whole underlying tool reachable |
+| 2026-07-14 | Docs live in docs/ (getting-started, how-routing-works, writing-commands, cookbook-wrappers); `ssm get` is the canonical wrapper example |
 | 2026-07-13 | Meta-commands live under `self` (`tiss self doctor|test|tree|completion`), rustup-style: top-level names stay free for passthrough tools (`tree`, `test` are real binaries), no `tiss tiss` stutter, reads clean through aliases (`x self doctor`). Renamed from the original `tiss` namespace pre-adoption, no compat path |
 | 2026-07-13 | Overlay system: TISS_PATH most-specific-first, overlay wins, full-power trees (scripts+config+libs); `cfg` first-wins semantics make env > user > specific > core; managed via `tiss self tree` |
 | 2026-07-13 | No TISS_ENV environment concept yet — AWS_PROFILE-style env vars already carry context and cacheExec keys on them; revisit when a wrapper needs it |

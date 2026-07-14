@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
       out="${2:?--out needs a FILE}"
       shift 2
       ;;
-    -h | --help)
+    -h | --help | help)
       tissHelp "$0"
       exit 0
       ;;

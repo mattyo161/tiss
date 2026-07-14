@@ -1,6 +1,8 @@
 # Contributing to tiss
 
-The whole design fits in [DESIGN.md](DESIGN.md) — principles, subsystem
+Start with [docs/writing-commands.md](docs/writing-commands.md) and
+[docs/how-routing-works.md](docs/how-routing-works.md). The whole design
+fits in [DESIGN.md](DESIGN.md) — principles, subsystem
 docs, and a decision log explaining every judgment call. Read it first;
 it's the fastest way to write code that fits.
 

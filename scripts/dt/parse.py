@@ -184,7 +184,7 @@ def main():
             mode = flag[2:]
         elif flag == "--now":  # deterministic reference, mainly for tests
             now = datetime.fromtimestamp(int(args.pop(0)))
-        elif flag == "--help":
+        elif flag in ("--help", "help"):
             print("usage: tiss dt parse [--epoch|--iso|--ts] <date string...>", file=sys.stderr)
             sys.exit(0)
         else:

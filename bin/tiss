@@ -228,10 +228,47 @@ $name
   done < <(tissTrees)
 }
 
+# --- near-miss detection -------------------------------------------------------
+# A file that WOULD have routed but isn't executable is the #1 "why doesn't
+# my new command work" trap. Never fail silently: find it and say so.
+findNearMiss() { # findNearMiss <args...> -> path of non-executable candidate
+  local tree node w f
+  while IFS= read -r tree; do
+    node="$tree/scripts"
+    for w in "$@"; do
+      case "$w" in -*) break ;; esac
+      for f in "$node/$w" "$node/$w".*; do
+        if [ -f "$f" ] && [ ! -x "$f" ]; then
+          printf '%s\n' "$f"
+          return 0
+        fi
+      done
+      [ -d "$node/$w" ] || break
+      node="$node/$w"
+    done
+  done < <(tissTrees)
+  return 1
+}
+
 # --- passthrough -------------------------------------------------------------
 passthrough() { # passthrough <tool> [args...] — behave as if called natively
-  local tool
-  tool="$(tissCommandAlias "$1")" # e.g. `tiss tf init` -> terraform init
+  local near
+  if near="$(findNearMiss "$@")"; then
+    if command -v "$(tissCommandAlias "$1")" >/dev/null 2>&1; then
+      logWarn "'$near' would match this command but is not executable (chmod +x to activate it) — passing through"
+    else
+      logError "'$near' matches this command but is not executable."
+      logError "activate it with:  chmod +x $near"
+      exit 126
+    fi
+  fi
+  # Aliases may be multi-word: `tiss ssm ...` -> `aws ssm ...`
+  local alias_cmd
+  alias_cmd="$(tissCommandAlias "$1")"
+  shift
+  # shellcheck disable=SC2086  # word-splitting the alias is the point
+  set -- $alias_cmd "$@"
+  local tool="$1"
   shift
   ensureTool "$tool" || exit 127
   exec "$tool" "$@"
@@ -240,9 +277,33 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
 # --- main --------------------------------------------------------------------
 main() {
   case "${1:-}" in
-    "" | -h | --help | help)
+    "" | -h | --help)
       showHelp
       exit 0
+      ;;
+    help)
+      # `tiss help` / `tiss help git clone` — help is a first-class word.
+      shift
+      if [ $# -eq 0 ]; then
+        showHelp
+        exit 0
+      fi
+      local tree nspath
+      while IFS= read -r tree; do
+        if resolveInTree "$tree/scripts" "$@"; then
+          tissHelp "$RESOLVED_SCRIPT"
+          exit 0
+        fi
+      done < <(tissTrees)
+      nspath="$(printf '/%s' "$@")"
+      while IFS= read -r tree; do
+        if [ -d "$tree/scripts$nspath" ]; then
+          showHelp "$@"
+          exit 0
+        fi
+      done < <(tissTrees)
+      logError "no tiss command '$*' — for a passthrough tool's own help try: $TISS_NAME $1 --help"
+      exit 2
       ;;
     --manifest)
       manifest

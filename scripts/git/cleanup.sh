@@ -14,7 +14,7 @@ source "$TISS_LIB/init.sh"
 
 yes=0
 case "${1:-}" in
-  -h | --help)
+  -h | --help | help)
     tissHelp "$0"
     exit 0
     ;;

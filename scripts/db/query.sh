@@ -17,7 +17,7 @@ sql=""
 raw=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h | --help)
+    -h | --help | help)
       tissHelp "$0"
       exit 0
       ;;
