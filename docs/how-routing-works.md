@@ -46,9 +46,9 @@ If a script matched, its `# @needs` tools are installed first (never for
    merged help.
 6. **Passthrough** — behave as if the command were called natively:
    `tiss git push` execs `git push`. Missing tools are lazy-installed
-   (mise, then brew). Some names are aliased first — `tf` → `terraform`,
-   `ssm` → `aws ssm` — so `tiss ssm describe-parameters` runs
-   `aws ssm describe-parameters`.
+   (mise, then brew). Some names are aliased first (`tf` → `terraform`)
+   for pure name mapping; anything needing logic belongs in a `_self`
+   handler instead.
 
 ## Precedence rules worth knowing
 
