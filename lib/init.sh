@@ -28,6 +28,7 @@ TISS_CONFIG="${TISS_CONFIG:-$HOME/.config/tiss}"
 . "$TISS_LIB/rmafter.sh"
 . "$TISS_LIB/exec.sh"
 . "$TISS_LIB/bkup.sh"
+. "$TISS_LIB/tf.sh"
 . "$TISS_LIB/config.sh"
 
 tissLoadConfigs

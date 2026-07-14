@@ -16,8 +16,11 @@ assertMatch "ts is compact timestamp" '^[0-9]{8}T[0-9]{6}$' "$(ts)"
 now="$(date +%s)"
 utc_now="$(utc)"
 [ $((utc_now - now)) -le 1 ] && _report ok "utc" || _report FAIL "utc now drifted: $utc_now vs $now"
-assertEq "utc +1d offset" 86400 "$(($(utc +1d) - $(utc)))"
-assertEq "utc -1h offset" -3600 "$(($(utc -1h) - $(utc)))"
+# two date calls can straddle a second boundary — allow ±1s
+d="$(($(utc +1d) - $(utc)))"
+[ "$d" -ge 86399 ] && [ "$d" -le 86401 ] && _report ok "utc +1d offset" || _report FAIL "utc +1d offset: $d"
+d="$(($(utc -1h) - $(utc)))"
+[ "$d" -ge -3601 ] && [ "$d" -le -3599 ] && _report ok "utc -1h offset" || _report FAIL "utc -1h offset: $d"
 
 assertEq "ts2js epoch to ISO8601 UTC" "2026-01-01T00:00:00Z" "$(ts2js 1767225600)"
 assertMatch "epoch2ts compact form" '^[0-9]{8}T[0-9]{6}$' "$(epoch2ts 1767225600)"

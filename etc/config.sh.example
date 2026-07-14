@@ -67,6 +67,16 @@
 ## Max seconds the background monitor sleeps between reap checks
 # cfg TISS_RMAFTER_INTERVAL 60
 
+## --- terraform wrapper -------------------------------------------------------
+
+## What happens after tf plan finds changes: ask (y/N prompt) | always
+## (auto-apply) | never (plan/report only)
+# cfg TISS_TF_AUTO_APPLY ask
+
+## How long saved .tfplan files live before self-destructing (0 = keep
+## forever). The .json/.log/run.json artifacts always stay, for reports.
+# cfg TISS_TF_PLAN_TTL 1d
+
 ## --- ssm wrapper -------------------------------------------------------------
 
 ## How long `tiss ssm` caches read results (tiss duration grammar: 30 = 30m)

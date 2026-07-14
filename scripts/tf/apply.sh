@@ -1,44 +1,60 @@
 #!/usr/bin/env bash
-# @description Terraform apply — ONLY from a plan file made by tf plan
-# @usage tiss tf apply
-# @example tiss tf plan && tiss tf apply
-# @needs terraform
+# @description Apply the latest saved plan — same summary and prompt as tf plan
+# @usage tiss tf apply [-y|--yes] [--plan FILE]
+# @example tiss tf apply
+# @example tiss tf apply --yes
+# @needs terraform jq
 #
-# Hard requirement, no escape hatch: apply always runs from a reviewed
-# plan. No plan file means a refusal with instructions, not a prompt.
-# The plan file is consumed (deleted) after a successful apply — plans
-# are single-use by design.
+# Reads .tiss/tfplans/latest.json (written by tf plan), shows the SAME icon
+# summary the plan ended with, asks y/N, then applies that exact .tfplan —
+# it never re-plans. Warns if the plan was already applied; detects stale
+# plans; records applied_at back into the run metadata. Override the prompt
+# with --yes or TISS_TF_AUTO_APPLY=always.
 #
-set -euo pipefail
+set -uo pipefail
 source "$TISS_LIB/init.sh"
 
-case "${1:-}" in
-  -h | --help | help)
-    tissHelp "$0"
-    exit 0
-    ;;
-esac
+cfg TISS_TF_AUTO_APPLY ask
+cfg TISS_TF_PLAN_TTL 1d
 
-if [ $# -gt 0 ]; then
-  logError "tf apply takes no arguments — it applies the plan file from '$TISS_NAME tf plan'."
-  logError "different variables or targets belong on the plan: $TISS_NAME tf plan -var-file=..."
-  exit 2
-fi
-
-# Newest plan wins; older ones are stale by definition.
-plan=""
-for f in .tiss/tf-*.plan; do
-  [ -f "$f" ] || continue
-  if [ -z "$plan" ] || [ "$f" -nt "$plan" ]; then
-    plan="$f"
-  fi
+force=false
+plan_file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h | --help | help)
+      tissHelp "$0"
+      exit 0
+      ;;
+    -y | --yes) force=true ;;
+    --plan)
+      plan_file="${2:?--plan needs a FILE}"
+      shift
+      ;;
+    *)
+      logError "unknown argument: $1 (targets/vars belong on the plan: $TISS_NAME tf plan -target=...)"
+      exit 2
+      ;;
+  esac
+  shift
 done
+[ "$TISS_TF_AUTO_APPLY" = always ] && force=true
 
-if [ -z "$plan" ]; then
-  logError "no plan file. Run '$TISS_NAME tf plan' first — apply always runs from a reviewed plan."
-  exit 2
+if [ -n "$plan_file" ]; then
+  [ -f "$plan_file" ] || {
+    logError "no such plan file: $plan_file"
+    exit 1
+  }
+  meta="${plan_file%.tfplan}.run.json"
+  [ -f "$meta" ] || {
+    logError "no run metadata next to the plan: $meta (was it made by '$TISS_NAME tf plan'?)"
+    exit 1
+  }
+else
+  meta="$(tfLatestMeta)"
+  [ -f "$meta" ] || {
+    logError "no saved plan here — run '$TISS_NAME tf plan' first (apply always runs from a reviewed plan)"
+    exit 2
+  }
 fi
 
-learnExec terraform apply "$plan"
-rm -f "$plan" # single-use: state has moved, this plan is spent
-logInfo "applied and consumed $plan"
+tfApplyRun "$meta" true "$force"
