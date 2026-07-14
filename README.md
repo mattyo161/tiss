@@ -30,7 +30,10 @@ derive live from the tree and each script's `# @` annotations.
 | `csv2json` `tsv2json` `json2csv` `json2tsv` `json2md` | format conversions as miller façades, jsonl-first |
 | `json2xlsx` | formatted spreadsheets from json/jsonl (python leaf via uv) |
 | `dt parse` | fuzzy date parsing: `tiss dt parse Mon 12/24/28` → 1928, because that's the Monday |
-| `tiss doctor` | checks your setup and tells you exactly what to fix |
+| `dns flush` | flush the OS DNS cache — knows the macOS and Linux incantations |
+| `tmux go` `new` `ls` `attach` `kill` | tmux without remembering args; the guided menu narrates every real command |
+| `serve` `mkpass` `urlparse` `jwt` `checkport` | polyglot one-liner rescues (python/ruby/node/ts/go) |
+| `self doctor` `config` `tree` `pull` `cd` ... | the meta namespace: setup checks, configuration, overlay trees, updating |
 
 Plus the sourced helper suite every script gets: `logInfo`/`pipeInfo`/`teeInfo`,
 `ts`/`utc`/`dur2s`, and friends. Durations are `1w2d3h4m5s` everywhere
