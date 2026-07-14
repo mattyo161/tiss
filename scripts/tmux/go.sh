@@ -18,7 +18,7 @@ case "${1:-}" in
     ;;
 esac
 
-if ! { [ -r /dev/tty ] && [ -w /dev/tty ]; }; then
+if ! { : </dev/tty >/dev/tty; } 2>/dev/null; then
   logError "interactive terminal required (scriptable pieces: $TISS_NAME tmux ls|new|attach|kill)"
   exit 2
 fi

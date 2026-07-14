@@ -42,7 +42,7 @@ done
 if [ "$from_stdin" = 1 ]; then
   ini="$(cat)"
 else
-  [ -r /dev/tty ] || {
+  { : </dev/tty; } 2>/dev/null || {
     logError "interactive terminal required (or use --stdin)"
     exit 2
   }

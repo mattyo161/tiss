@@ -60,6 +60,13 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
   local pkg
   pkg="$(tissRegistryName "$tool")"
 
+  case "${TISS_AUTO_INSTALL:-ask}" in
+    never)
+      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: mise use -g $pkg@latest"
+      return 127
+      ;;
+  esac
+
   if ! command -v mise >/dev/null 2>&1 && ! command -v brew >/dev/null 2>&1; then
     logError "'$tool' is not installed, and neither mise nor brew is available to install it."
     logError "Install mise (https://mise.jdx.dev) to enable auto-install, or install '$tool' manually."
@@ -67,14 +74,10 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
   fi
 
   case "${TISS_AUTO_INSTALL:-ask}" in
-    never)
-      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: mise use -g $pkg@latest"
-      return 127
-      ;;
     always) ;;
     *)
       # Prompt on the controlling terminal so pipelines are unaffected.
-      if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+      if { : </dev/tty >/dev/tty; } 2>/dev/null; then
         local reply=""
         printf "%s: '%s' is not installed. Install %s now? [Y/n] " \
           "${TISS_NAME:-tiss}" "$tool" "$pkg" >/dev/tty

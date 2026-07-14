@@ -35,7 +35,7 @@ tissEnsureIdentity() { # create the tiss identity interactively if absent
   logInfo "tiss encrypts with 'age' using a key that never leaves this machine."
   logInfo "Choose a passphrase now; decrypting will ask for it once per session."
 
-  if ! [ -r /dev/tty ]; then
+  if ! { : </dev/tty; } 2>/dev/null; then
     logError "First-time setup needs an interactive terminal. Run '${TISS_NAME:-tiss} encrypt' once from a shell."
     return 1
   fi
