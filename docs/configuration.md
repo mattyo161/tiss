@@ -29,6 +29,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | --- | --- | --- |
 | `TISS_AUTO_INSTALL` | `ask` | Missing-tool behavior at passthrough/`@needs` time: `ask` prompts, `always` installs silently, `never` refuses with instructions |
 | `TISS_LOG_LEVEL` | `INFO` | stderr verbosity: `ERROR` \| `WARN` \| `INFO` \| `DEBUG` |
+| `TISS_ENV` | empty | Active environment profile. Set per-invocation with the `@` prefix (`tiss @prod ssm get ...`) or per-shell; participates in every cacheExec key, so environments never share cache entries |
 | `TISS_INSTALL_ALLOW` | empty | Extra tools passthrough may auto-install, beyond the curated built-in set (age, git, jq, rg, terraform, ...). `@needs`-declared tools are always allowed — this gates only commands you type |
 | `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss self tree add` (persists it here for you) |
 | `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
@@ -64,6 +65,25 @@ tiss self config edit     # open in $EDITOR (creates if missing)
 
 `tiss self tree add` also writes to this file (a managed `cfg TISS_PATH`
 line); your own lines are preserved.
+
+## Environments
+
+An environment profile is a plain shell file of exports — AWS profile,
+region, kube context, whatever defines "prod" for you:
+
+```sh
+tiss self env edit prod     # creates ~/.config/tiss/env/prod.sh, opens it
+tiss @prod ssm get --path /prod/app     # one command in that environment
+tiss @prod                              # dev shell inside it (prompt shows the env)
+tiss self env list|show NAME            # what exists, what loads
+```
+
+Profiles layer like everything else: a tree's `etc/env/prod.sh` (team
+defaults) loads first, yours loads last and wins. `TISS_ENV` is part of
+every cacheExec key, so `@dev` and `@prod` caches never mix. The `@`
+prefix in the *suffix* position means versions instead:
+`tiss python@3.13 script.py` runs through `mise x` without touching your
+global toolchain.
 
 ## Per-wrapper settings convention
 

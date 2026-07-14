@@ -25,6 +25,11 @@
 ## Log verbosity on stderr: ERROR | WARN | INFO | DEBUG
 # cfg TISS_LOG_LEVEL INFO
 
+## Active environment profile (dev/stage/prod...). Usually set per
+## invocation (`tiss @prod ...`) or per shell, not persistently here —
+## see: tiss self env
+# cfg TISS_ENV ""
+
 ## Extra tools (space-separated) that passthrough may auto-install, on
 ## top of the curated built-in set. Tools declared by scripts via @needs
 ## are always allowed; this gate only covers commands YOU type.

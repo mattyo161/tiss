@@ -31,8 +31,30 @@ source "$TISS_LIB/init.sh"
 cd "$TISS_HOME"
 export PATH="$TISS_HOME/bin:\$PATH"
 export HISTFILE="$TISS_STATE/shell_history"
-PS1='\[\033[36m\]$TISS_NAME\[\033[0m\]> '
-echo "$TISS_NAME dev shell — helpers loaded: logInfo, saveData/readData/lsData, cacheExec, learnExec, dur2s, bkup, rmAfter, ..."
+
+# help is a first-class word here too: bare = the command tree + loaded
+# helpers; 'help <cmd>' = that command's help.
+help() {
+  if [ \$# -eq 0 ]; then
+    command "$TISS_NAME" help
+    echo
+    echo "helpers loaded in this shell (call them directly):"
+    compgen -A function | grep -vE '^(_|help\$|command_not_found)' | sort | tr '\n' ' ' | fold -s -w 76 | sed 's/^/  /'
+    echo
+  else
+    command "$TISS_NAME" help "\$@"
+  fi
+}
+
+# starship prompt when available (custom tiss config); plain PS1 otherwise.
+if command -v starship >/dev/null 2>&1; then
+  export STARSHIP_CONFIG="$TISS_HOME/etc/starship.toml"
+  eval "\$(starship init bash)"
+else
+  PS1='\[\033[36m\]$TISS_NAME\[\033[0m\]\${TISS_ENV:+\[\033[33m\](\$TISS_ENV)\[\033[0m\]}> '
+fi
+
+echo "$TISS_NAME dev shell — helpers loaded; 'help' to look around\${TISS_ENV:+; environment: \$TISS_ENV}"
 echo "cwd: $TISS_HOME    (exit or ctrl-d to leave)"
 RC
 rmAfter 1m "$rcfile"

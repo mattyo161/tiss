@@ -69,3 +69,61 @@ $trees_reversed
 EOF
   return 0
 }
+
+# --- environments ---------------------------------------------------------------
+# An environment profile is a plain shell file of exports (AWS_PROFILE,
+# regions, account defaults...): trees ship etc/env/<name>.sh, your own
+# live in $TISS_CONFIG/env/<name>.sh. Loading sources them least-specific
+# first (core -> overlays -> yours), so YOUR exports win. `tiss @<name>
+# <command>` loads one for a single invocation; bare `tiss @<name>` drops
+# into the dev shell inside it. TISS_ENV participates in cacheExec keys,
+# so environments never share cache entries.
+tissEnvFiles() { # tissEnvFiles <name> -> profile files, least-specific first
+  local name="$1" tree ordered=""
+  while IFS= read -r tree; do
+    ordered="$tree
+$ordered"
+  done < <(tissTrees)
+  while IFS= read -r tree; do
+    [ -n "$tree" ] || continue
+    [ -f "$tree/etc/env/$name.sh" ] && printf '%s\n' "$tree/etc/env/$name.sh"
+  done <<EOF
+$ordered
+EOF
+  [ -f "$TISS_CONFIG/env/$name.sh" ] && printf '%s\n' "$TISS_CONFIG/env/$name.sh"
+  return 0
+}
+
+tissListEnvs() { # available environment names, one per line
+  local tree f
+  {
+    while IFS= read -r tree; do
+      for f in "$tree/etc/env"/*.sh; do
+        [ -f "$f" ] && basename "$f" .sh
+      done
+    done < <(tissTrees)
+    for f in "$TISS_CONFIG/env"/*.sh; do
+      [ -f "$f" ] && basename "$f" .sh
+    done
+  } | sort -u
+}
+
+tissLoadEnv() { # tissLoadEnv <name> — source profiles, export TISS_ENV
+  local name="$1" f found=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    # shellcheck disable=SC1090
+    . "$f"
+    found=1
+  done < <(tissEnvFiles "$name")
+  if [ "$found" = 0 ]; then
+    logError "no environment '$name' — create one: ${TISS_NAME:-tiss} self env edit $name"
+    local avail
+    avail="$(tissListEnvs)"
+    [ -n "$avail" ] && logError "available:$(printf ' %s' "$avail" | tr '\n' ' ')"
+    return 2
+  fi
+  TISS_ENV="$name"
+  export TISS_ENV
+  logDebug "environment '$name' loaded"
+}

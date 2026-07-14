@@ -306,6 +306,22 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
       exit 126
     fi
   fi
+  # tool@version runs through mise without touching your global tools:
+  # `tiss python@3.13 script.py` -> mise x python@3.13 -- python script.py
+  case "$1" in
+    *@?*)
+      local spec="$1" base
+      base="${spec%%@*}"
+      shift
+      if ! tissInstallAllowed "$base"; then
+        logError "'$base' is not on the passthrough install allowlist (cfg TISS_INSTALL_ALLOW \"$base\")"
+        exit 127
+      fi
+      ensureTool mise || exit 127
+      exec mise x "$spec" -- "$base" "$@"
+      ;;
+  esac
+
   # Aliases may be multi-word: `tiss ssm ...` -> `aws ssm ...`
   local alias_cmd
   alias_cmd="$(tissCommandAlias "$1")"
@@ -320,6 +336,18 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
 
 # --- main --------------------------------------------------------------------
 main() {
+  # @<name> prefix: load that environment profile, then continue routing.
+  # Bare `tiss @dev` drops into the dev shell inside the environment.
+  local envName
+  case "${1:-}" in
+    @?*)
+      envName="${1#@}"
+      shift
+      tissLoadEnv "$envName" || exit 2
+      [ $# -gt 0 ] || set -- self shell
+      ;;
+  esac
+
   case "${1:-}" in
     "" | -h | --help)
       showHelp

@@ -200,6 +200,8 @@ definitions override.
 | 2026-07-13 | Meta-commands live under `self` (`tiss self doctor|test|tree|completion`), rustup-style: top-level names stay free for passthrough tools (`tree`, `test` are real binaries), no `tiss tiss` stutter, reads clean through aliases (`x self doctor`). Renamed from the original `tiss` namespace pre-adoption, no compat path |
 | 2026-07-13 | Overlay system: TISS_PATH most-specific-first, overlay wins, full-power trees (scripts+config+libs); `cfg` first-wins semantics make env > user > specific > core; managed via `tiss self tree` |
 | 2026-07-13 | No TISS_ENV environment concept yet — AWS_PROFILE-style env vars already carry context and cacheExec keys on them; revisit when a wrapper needs it |
+| 2026-07-14 | REVISITED (Matt requested): TISS_ENV environments via profile files (tree etc/env/<name>.sh loads first, user ~/.config/tiss/env/<name>.sh wins) — plain exports, not cfg. `tiss @<name> <cmd>` loads one per invocation; bare `tiss @<name>` = dev shell inside it; TISS_ENV joins the cacheExec key defaults so environments never share caches. Suffix `@` means versions: `tiss python@3.13` -> mise x (allowlist-gated) |
+| 2026-07-14 | Dev shell grew `help` (command tree + loaded helpers) and a starship prompt (etc/starship.toml, env shown in yellow) with plain-PS1 fallback |
 | 2026-07-13 | Wrapper library launches with git, db (encrypted-creds pattern), terraform (hard plan-file discipline, no force flag) — aws deferred |
 | 2026-07-13 | Distribution: semver tags + curl-able install.sh + CONTRIBUTING; brew tap deferred until the interface settles |
 | 2026-07-12 | Name: **tiss**; repo `mattyo161/tiss`, public from day one |

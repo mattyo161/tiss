@@ -32,7 +32,7 @@ tissCommandAlias() { # namespace/short name -> real command for passthrough
 # running with your permissions), but a mistyped passthrough command must
 # never become an "install this package? [Y/n]" prompt. Extend with
 # TISS_INSTALL_ALLOW (space-separated names) in your config.
-TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gh git go jc jq mise mlr node pstree python3 rg ruby shellcheck terraform tmux tree uv watch"
+TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch"
 
 tissInstallAllowed() { # tissInstallAllowed <tool> -> 0 if passthrough-installable
   local t
