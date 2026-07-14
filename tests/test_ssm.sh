@@ -71,9 +71,12 @@ o1="$("$TISS_BIN" ssm describe-parameters 2>/dev/null)"
 o2="$("$TISS_BIN" ssm describe-parameters 2>/dev/null)"
 assertEq "_self caches read verbs" 1 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
 assertEq "_self cached output identical" "$o1" "$o2"
+"$TISS_BIN" ssm describe-parameters --recache >/dev/null 2>&1
+assertEq "--recache scavenged through the handler" 2 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+assertMatch "scavenged flag never reached aws" '^ssm describe-parameters$' "$(tail -1 "$AWS_SHIM_LOG")"
 "$TISS_BIN" ssm put-parameter --name /x --value 1 >/dev/null 2>&1
 "$TISS_BIN" ssm put-parameter --name /x --value 1 >/dev/null 2>&1
-assertEq "_self never caches writes" 3 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+assertEq "_self never caches writes" 4 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
 learn="$("$TISS_BIN" ssm put-parameter --name /x --value 1 2>&1 >/dev/null)"
 assertMatch "_self narrates writes via LEARN" 'LEARN.*aws ssm put-parameter' "$learn"
 assertMatch "get.sh still beats the handler" 'usage: tiss ssm get' "$("$TISS_BIN" ssm get help)"

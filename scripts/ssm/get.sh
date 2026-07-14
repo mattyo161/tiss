@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # @description Get SSM parameters (--name/--names/--path) as jsonl, cached + encrypted
-# @usage tiss ssm get (--name N | --names N1,N2 | --path P) [--duration 1h] [--refresh] [--no-cache] [--no-encrypt] [--no-decryption] [aws args...]
+# @usage tiss ssm get (--name N | --names N1,N2 | --path P) [--duration 1h] [--refresh|--recache|--no-cache] [--no-encrypt] [--no-decryption] [aws args...]
 # @example tiss ssm get --path /develop | jq -r '.Name + " = " + .Value'
 # @example tiss ssm get --name /develop/db/password --no-cache
 # @example tiss ssm get --names /a,/b --duration 1d
@@ -54,6 +54,7 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --refresh) refresh="--refresh" ;;
+    --recache) refresh="--recache" ;;
     --no-cache) cache=0 ;;
     --no-encrypt) enc=0 ;;
     --no-decryption) decrypt=0 ;;

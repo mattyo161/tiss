@@ -51,9 +51,42 @@ entries="$(find "$TISS_DATA/cache" -type f | wc -l | tr -d ' ')"
 # first/refresh(1 key) + dev + prod + MY_CTX a/b (2) = 5
 assertEq "failed command not cached" 5 "$entries"
 
+# --no-cache: bypass entirely — no read, no write, cascades via env.
+nc1="$(cacheExec --no-cache bash -c 'echo "nc=$RANDOM"' 2>/dev/null)"
+nc2="$(cacheExec --no-cache bash -c 'echo "nc=$RANDOM"' 2>/dev/null)"
+[ "$nc1" != "$nc2" ] && _report ok "--no-cache always reruns" || _report FAIL "--no-cache served a cached value"
+entries_before="$(find "$TISS_DATA/cache" -type f | wc -l | tr -d ' ')"
+cacheExec --no-cache bash -c 'echo x' >/dev/null 2>&1
+assertEq "--no-cache writes nothing" "$entries_before" "$(find "$TISS_DATA/cache" -type f | wc -l | tr -d ' ')"
+assertEq "--no-cache cascades via env" 1 "$(cacheExec --no-cache bash -c 'echo "$TISS_NO_CACHE"' 2>/dev/null)"
+assertEq "TISS_NO_CACHE honored without flag" \
+  "$(TISS_NO_CACHE=1 bash -c 'source "$TISS_LIB/init.sh"; cacheExec bash -c "echo \$RANDOM"' 2>/dev/null | grep -c '^[0-9]')" 1
+
+# Scavenging: cache-control flags are picked out of the command's argv.
+sc="$(cacheExec echo hello --recache 2>/dev/null)"
+assertEq "--recache scavenged, not passed to command" "hello" "$sc"
+sc="$(cacheExec --duration 1h echo hi --no-cache there 2>/dev/null)"
+assertEq "--no-cache scavenged mid-args" "hi there" "$sc"
+
+# `--` stops scavenging for tools with their own flags.
+sc="$(cacheExec --no-cache -- echo build --no-cache . 2>/dev/null)"
+assertEq "-- passes the tool's own --no-cache through" "build --no-cache ." "$sc"
+
+# --recache invalidates first: entry dies even when the rerun fails...
+seed_key="$(tissCacheKey bash -c 'exit 7')"
+echo "stale-value" | saveData "$seed_key" 2>/dev/null
+assertExit "recache run fails" 7 cacheExec --recache bash -c 'exit 7'
+assertExit "entry gone after failed --recache" 1 readData "$seed_key"
+# ...while --refresh keeps the old entry on failure.
+seed_key2="$(tissCacheKey bash -c 'exit 9')"
+echo "survivor" | saveData "$seed_key2" 2>/dev/null
+assertExit "refresh run fails" 9 cacheExec --refresh bash -c 'exit 9'
+assertEq "entry survives failed --refresh" "survivor" "$(readData "$seed_key2")"
+
 # Duration expiry: a stale entry reruns.
-echo "old-value" | saveData "cache/$(printf '%s' 'bash -c echo fresh' | tissSha256)" 2>/dev/null
-old_file="$(find "$TISS_DATA/cache" -name "$(printf '%s' 'bash -c echo fresh' | tissSha256)*" | head -1)"
+stale_key="$(tissCacheKey bash -c 'echo fresh')"
+echo "old-value" | saveData "$stale_key" 2>/dev/null
+old_file="$(find "$TISS_DATA/cache" -name "$(basename "$stale_key")*" | head -1)"
 touch -t 202001010000 "$old_file"
 fresh="$(cacheExec --duration 1h bash -c 'echo fresh' 2>/dev/null)"
 assertEq "stale entry reruns command" "fresh" "$fresh"

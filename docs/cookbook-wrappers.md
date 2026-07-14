@@ -62,8 +62,14 @@ cacheExec --encrypt --duration 1h aws ssm get-parameters-by-path ...
   with your tiss identity, never plaintext on disk.
 - The cache key includes `AWS_PROFILE` / `AWS_REGION` automatically —
   `AWS_PROFILE=prod tiss ssm get ...` and dev never cross-contaminate.
-- Failures are never cached; `--refresh` forces a real call;
-  `--no-cache` opts out entirely.
+- Failures are never cached. Cache control comes in three uniform
+  flags, scavenged from anywhere in the args (so `tiss ssm
+  describe-parameters --recache` works without the wrapper doing
+  anything): `--refresh` (rerun, replace on success), `--recache`
+  (invalidate first — gone even if the rerun fails), `--no-cache`
+  (bypass entirely; cascades to nested cacheExec calls). A literal
+  `--` protects tools with their own such flags:
+  `cacheExec -- docker build --no-cache .`
 
 Cache the **raw** tool output and run the jq unwrap on every read —
 that keeps one cache entry serving any downstream filter.

@@ -184,6 +184,7 @@ definitions override.
 
 | Date | Decision |
 | --- | --- |
+| 2026-07-14 | cacheExec cache control: `--no-cache` (bypass, cascades to nested calls via prefix-env TISS_NO_CACHE=1 — child-only, never mutates the caller) and `--recache` (invalidate FIRST, gone even on failure) vs `--refresh` (replace on success only). The boolean trio is scavenged from ANYWHERE in argv so wrappers passing "$@" inherit uniform cache control; value flags (--duration) stay prefix-only (collision risk); literal `--` stops scavenging (docker build --no-cache). Key derivation extracted to `tissCacheKey` |
 | 2026-07-14 | `_self.*` namespace handlers: deepest wins, exact scripts beat it, bare namespace still shows help; replaces the ssm passthrough alias with intent-routing (reads cached via cacheExec --encrypt, writes narrated via learnExec, writes NEVER cached) |
 | 2026-07-14 | Annotations parse from `#` and `//` comment styles; polyglot examples shipped for python/ruby/node/typescript/go (go via the `//usr/bin/env go run` polyglot line, ts via node type stripping) |
 | 2026-07-14 | doctor scans all trees for non-executable scripts (the near-miss trap, caught at checkup time too) |

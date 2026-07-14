@@ -85,14 +85,35 @@ tissSha256() { # stdin -> hex digest (shasum on macOS, sha256sum on linux)
   fi
 }
 
+tissCacheKey() { # tissCacheKey <command...> -> cache/<sha>, cacheExec's exact keying
+  local sig="$*" v
+  for v in $TISS_CACHE_ENV_DEFAULT ${TISS_CACHE_ENV:-}; do
+    [ -n "${!v:-}" ] && sig="$sig $v=${!v}"
+  done
+  printf 'cache/%s' "$(printf '%s' "$sig" | tissSha256)"
+}
+
 tissFileMtime() { # epoch mtime, GNU or BSD stat
   # GNU first: BSD stat errors cleanly on -c, but GNU stat treats -f as
   # FILESYSTEM status and happily prints garbage (the mount point) for %m.
   stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
 }
 
-cacheExec() { # cacheExec [--duration D] [--refresh] [--encrypt] [--no-gzip] <command...>
-  local dur="1h" gz_opt="" enc_opt="" refresh=0
+cacheExec() { # cacheExec [--duration D] [--refresh|--recache|--no-cache] [--encrypt] [--no-gzip] [--] <command...>
+  # Two kinds of flags:
+  #   prefix-only (author decisions): --duration D, --encrypt, --gzip/--no-gzip
+  #   scavenged from ANYWHERE (user toggles): --no-cache, --recache, --refresh
+  # Scavenging lets wrappers pass "$@" through and inherit uniform cache
+  # control for free (`tiss ssm describe-parameters --recache`). A literal
+  # `--` stops scavenging for tools with their own such flags
+  # (`cacheExec -- docker build --no-cache .`).
+  #
+  #   --refresh   rerun; replace the entry only on SUCCESS (old one is safe)
+  #   --recache   invalidate FIRST, then run — entry is gone even on failure
+  #   --no-cache  bypass entirely: no read, no write. Exports TISS_NO_CACHE=1
+  #               so nested cacheExec calls bypass too (cascading is the
+  #               intent: "completely fresh, end-to-end").
+  local dur="1h" gz_opt="" enc_opt="" refresh=0 recache=0 no_cache=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --duration)
@@ -100,6 +121,8 @@ cacheExec() { # cacheExec [--duration D] [--refresh] [--encrypt] [--no-gzip] <co
         shift
         ;;
       --refresh) refresh=1 ;;
+      --recache) recache=1 ;;
+      --no-cache) no_cache=1 ;;
       --encrypt) enc_opt="--encrypt" ;;
       --gzip) gz_opt="--gzip" ;;
       --no-gzip) gz_opt="--no-gzip" ;;
@@ -107,25 +130,59 @@ cacheExec() { # cacheExec [--duration D] [--refresh] [--encrypt] [--no-gzip] <co
     esac
     shift
   done
+
+  # Scavenge the boolean trio from the rest of the argv (until `--`).
+  local cmd=() verbatim=0 a
+  for a in "$@"; do
+    if [ "$verbatim" = 1 ]; then
+      cmd+=("$a")
+      continue
+    fi
+    case "$a" in
+      --) verbatim=1 ;; # marker consumed; everything after is the command's
+      --no-cache) no_cache=1 ;;
+      --recache) recache=1 ;;
+      --refresh) refresh=1 ;;
+      *) cmd+=("$a") ;;
+    esac
+  done
+  set -- ${cmd[@]+"${cmd[@]}"}
+
   if [ $# -eq 0 ]; then
-    logError "usage: cacheExec [--duration D] [--refresh] [--encrypt] <command...>"
+    logError "usage: cacheExec [--duration D] [--refresh|--recache|--no-cache] [--encrypt] [--] <command...>"
     return 2
+  fi
+
+  # Bypass mode: no read, no write — and cascade the intent to children
+  # via prefix-env ONLY (mutating/exporting in the caller's shell would
+  # silently disable caching for the rest of the calling script).
+  if [ "$no_cache" = 1 ] || [ "${TISS_NO_CACHE:-0}" = 1 ]; then
+    logDebug "cacheExec: bypassed (--no-cache)"
+    TISS_NO_CACHE=1 "$@"
+    return $?
   fi
 
   local dur_s
   dur_s="$(dur2s "$dur")" || return 2
 
-  # Cache key: the exact command line plus every significant env var that is
-  # set — AWS_PROFILE=prod and AWS_PROFILE=dev cache separately.
-  local sig="$*" v
-  for v in $TISS_CACHE_ENV_DEFAULT ${TISS_CACHE_ENV:-}; do
-    [ -n "${!v:-}" ] && sig="$sig $v=${!v}"
-  done
+  # Cache key: the exact command line plus every significant env var that
+  # is set — AWS_PROFILE=prod and AWS_PROFILE=dev cache separately.
   local key
-  key="cache/$(printf '%s' "$sig" | tissSha256)"
+  key="$(tissCacheKey "$@")"
+
+  # --recache: invalidate up front — the old entry must not survive,
+  # even if the command below fails (contrast with --refresh).
+  if [ "$recache" = 1 ]; then
+    local rc_base rc_f
+    rc_base="$(tissDataDir)/$key"
+    for rc_f in "$rc_base" "$rc_base.gz" "$rc_base.age" "$rc_base.gz.age"; do
+      rm -f "$rc_f"
+    done
+    logDebug "cacheExec: invalidated ($key)"
+  fi
 
   # Fresh hit?
-  if [ "$refresh" = 0 ]; then
+  if [ "$refresh" = 0 ] && [ "$recache" = 0 ]; then
     local base f file="" now mtime
     base="$(tissDataDir)/$key"
     for f in "$base" "$base.gz" "$base.age" "$base.gz.age"; do
