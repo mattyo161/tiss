@@ -46,6 +46,14 @@ case ":$PATH:" in
     ;;
 esac
 
+# Seed the fully commented config template (uncomment lines to override).
+cfg_dir="${TISS_CONFIG:-$HOME/.config/tiss}"
+if [ ! -f "$cfg_dir/config.sh" ]; then
+  mkdir -p "$cfg_dir"
+  cp "$dest/etc/config.sh.example" "$cfg_dir/config.sh"
+  say "created $cfg_dir/config.sh (all defaults, documented — uncomment to override)"
+fi
+
 say "checking your setup..."
 "$bin_dir/$name" self doctor || true
 

@@ -1,0 +1,74 @@
+# Configuration reference
+
+Every knob in tiss, in one place. The quickest tour is on your own
+machine: `tiss self config` lists each setting with its current
+effective value.
+
+## Precedence (highest wins)
+
+```
+1. environment variables        set before anything is sourced
+2. ~/.config/tiss/config.sh    your file (tiss self config edit)
+3. overlay tree etc/config.sh  most-specific tree first
+4. core defaults
+```
+
+The mechanism: every config file assigns through `cfg NAME value`, which
+only sets `NAME` when it's empty — so whoever is sourced *first* wins,
+and the environment (already set before sourcing) beats every file.
+Overlay trees carry team defaults; your file overrides theirs; a shell
+export overrides everything for one invocation:
+
+```sh
+TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
+```
+
+## Settings
+
+| Setting | Default | What it controls |
+| --- | --- | --- |
+| `TISS_AUTO_INSTALL` | `ask` | Missing-tool behavior at passthrough/`@needs` time: `ask` prompts, `always` installs silently, `never` refuses with instructions |
+| `TISS_LOG_LEVEL` | `INFO` | stderr verbosity: `ERROR` \| `WARN` \| `INFO` \| `DEBUG` |
+| `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss self tree add` (persists it here for you) |
+| `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
+| `TISS_STATE` | `~/.local/state/tiss` | State: `rmAfter` schedules, the `learnExec` history log |
+| `TISS_CACHE_ENV` | empty | Extra env var names (space-separated) added to `cacheExec` keys, on top of the built-ins (`AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `GOOGLE_CLOUD_PROJECT`, `CLOUDSDK_ACTIVE_CONFIG_NAME`, `KUBECONFIG`) |
+| `TISS_NO_CACHE` | `0` | `1` bypasses all `cacheExec` reads *and* writes. Usually set per-invocation by the `--no-cache` flag (which cascades it to child processes) rather than persistently |
+| `TISS_RMAFTER_PATHS` | home + tmp locations | Deletion allowlist: `rmAfter` only ever deletes under these colon-separated prefixes, enforced at schedule *and* reap time |
+| `TISS_RMAFTER_INTERVAL` | `60` | Max seconds the rmAfter background monitor sleeps between reap checks |
+| `TISS_SSM_CACHE_DURATION` | `1h` | How long `tiss ssm` caches read results (tiss duration grammar) |
+| `TISS_SSM_CACHE_ENCRYPT` | `1` | Encrypt cached ssm results at rest (`0` to disable) |
+
+## Env-only settings
+
+These can't live in the config file — they're needed to *find* it (or
+are derived):
+
+| Variable | Default | What it is |
+| --- | --- | --- |
+| `TISS_CONFIG` | `~/.config/tiss` | The config directory itself |
+| `TISS_HOME` | auto-detected | The tiss install root (dispatcher resolves its own symlink) |
+| `TISS_NAME` | argv[0] | The name tiss was invoked as — set by symlinking/aliasing, not by config |
+
+## Your config file
+
+`~/.config/tiss/config.sh` is seeded from a fully commented template on
+install (or on first `tiss self config`): every setting documented with
+its default, commented out. Uncomment to override:
+
+```sh
+tiss self config          # list settings + effective values
+tiss self config edit     # open in $EDITOR (creates if missing)
+```
+
+`tiss self tree add` also writes to this file (a managed `cfg TISS_PATH`
+line); your own lines are preserved.
+
+## Per-wrapper settings convention
+
+Wrapper-specific knobs follow the `TISS_<NAMESPACE>_<SETTING>` pattern
+(`TISS_SSM_CACHE_DURATION`) and are declared in the wrapper via
+`cfg TISS_SSM_CACHE_DURATION 1h` — meaning any layer above can override
+them. New wrappers should do the same, and add their settings to
+`etc/config.sh.example` — the test suite fails if a `TISS_*` variable is
+referenced in code but missing from the template.

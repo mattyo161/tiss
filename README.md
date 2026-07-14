@@ -42,6 +42,7 @@ Plus the sourced helper suite every script gets: `logInfo`/`pipeInfo`/`teeInfo`,
 - **[How routing works](docs/how-routing-works.md)** — the resolution hierarchy, precedence rules, and the "why didn't my script run" checklist
 - **[Writing commands](docs/writing-commands.md)** — annotations, the arg-parsing pattern, output discipline
 - **[Cookbook: wrapping tools](docs/cookbook-wrappers.md)** — build `tiss ssm get` and learn the wrapper patterns
+- **[Configuration reference](docs/configuration.md)** — every setting, the precedence rules, and `tiss self config`
 
 Help comes three ways, all equivalent: `tiss ssm get --help`, `tiss ssm get help`, `tiss help ssm get`.
 

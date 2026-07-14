@@ -34,13 +34,15 @@ TISS_NAME="$(basename "$0")" # help output follows the alias/symlink name
 TISS_SCRIPTS="$TISS_HOME/scripts"
 TISS_LIB="$TISS_HOME/lib"
 TISS_CONFIG="${TISS_CONFIG:-$HOME/.config/tiss}"
-TISS_DATA="${TISS_DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/data}"
-TISS_STATE="${TISS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/tiss}"
-export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG TISS_DATA TISS_STATE
+export TISS_HOME TISS_NAME TISS_SCRIPTS TISS_LIB TISS_CONFIG
 
 # Helpers (log*, meta, ensureTool, cfg, tissTrees, ...) shared with all
-# scripts. Also loads user config + overlay configs/libs (TISS_PATH).
+# scripts. Also loads user config + overlay configs/libs — so config may
+# set TISS_DATA/TISS_STATE/TISS_PATH; the defaults below apply after.
 . "$TISS_LIB/init.sh"
+TISS_DATA="${TISS_DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/data}"
+TISS_STATE="${TISS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/tiss}"
+export TISS_DATA TISS_STATE
 export TISS_PATH="${TISS_PATH:-}" # resolved by config; scripts inherit it
 
 # --- discovery ---------------------------------------------------------------

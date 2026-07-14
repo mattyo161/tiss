@@ -1,0 +1,65 @@
+# shellcheck shell=bash
+#
+# tiss user configuration — lives at ~/.config/tiss/config.sh
+# (create/open it with: tiss self config edit)
+#
+# HOW THIS WORKS
+#   Every setting uses `cfg NAME value`, which assigns only when NAME is
+#   not already set. Because this file is sourced FIRST, whatever you set
+#   here beats overlay-tree and core defaults — and environment variables
+#   always beat this file (they're set before anything is sourced).
+#   Uncomment a line to make it your default. All values shown are the
+#   built-in defaults.
+#
+# ENV-ONLY SETTINGS (can't live here — they're needed to FIND this file):
+#   TISS_CONFIG   config directory itself        (default ~/.config/tiss)
+#   TISS_HOME     the tiss install root          (auto-detected)
+#
+# `tiss self config` lists every setting with its current effective value.
+
+## --- general -----------------------------------------------------------------
+
+## How missing tools get installed on first use: ask | always | never
+# cfg TISS_AUTO_INSTALL ask
+
+## Log verbosity on stderr: ERROR | WARN | INFO | DEBUG
+# cfg TISS_LOG_LEVEL INFO
+
+## --- paths -------------------------------------------------------------------
+
+## Overlay tree stack, colon-separated, most specific first.
+## Prefer managing this with: tiss self tree add <dir>
+# cfg TISS_PATH ""
+
+## Where saveData/readData/cacheExec keep their files
+# cfg TISS_DATA "$HOME/.local/share/tiss/data"
+
+## Where tiss keeps state (rmAfter schedules, history log)
+# cfg TISS_STATE "$HOME/.local/state/tiss"
+
+## --- cacheExec ---------------------------------------------------------------
+
+## Extra env var names (space-separated) that participate in cache keys,
+## on top of the built-ins (AWS_PROFILE, AWS_REGION, KUBECONFIG, ...)
+# cfg TISS_CACHE_ENV ""
+
+## Bypass ALL caching (1 = on). Usually you want the per-invocation
+## --no-cache flag instead of a persistent setting here.
+# cfg TISS_NO_CACHE 0
+
+## --- rmAfter -----------------------------------------------------------------
+
+## Deletion allowlist: rmAfter only ever deletes under these colon-
+## separated prefixes (default: home + the usual tmp locations)
+# cfg TISS_RMAFTER_PATHS "$HOME:/tmp:/private/tmp:/var/folders:/private/var/folders"
+
+## Max seconds the background monitor sleeps between reap checks
+# cfg TISS_RMAFTER_INTERVAL 60
+
+## --- ssm wrapper -------------------------------------------------------------
+
+## How long `tiss ssm` caches read results (tiss duration grammar: 30 = 30m)
+# cfg TISS_SSM_CACHE_DURATION 1h
+
+## Encrypt cached ssm results at rest (1 = on; parameters are secrets)
+# cfg TISS_SSM_CACHE_ENCRYPT 1
