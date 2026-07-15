@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # @description Report on the latest plan: list, target, md, tree, csv, jsonl, excel
-# @usage tiss tf report [--format list|target|md|tree|csv|jsonl|excel] [plan.json...]
+# @usage tiss tf report [--format list|target|md|tree|csv|jsonl|excel|diff] [plan.json...]
 # @example tiss tf report
 # @example tiss tf report --format target > targets.txt
 # @example tiss tf report --format md >> PR_DESCRIPTION.md
 # @example tiss tf report --format excel
+# @example tiss tf report --format diff */.tiss/tfplans/*.tfplan.json > drift.md
 # @needs jq
 #
 # Reads the .tfplan.json that tf plan saved (never re-plans; terraform not
@@ -14,6 +15,9 @@
 #   md      markdown table          tree    module/resource hierarchy
 #   csv     via miller              jsonl   raw records for jq
 #   excel   formatted spreadsheet via json2xlsx (needs uv)
+#   diff    the deep-diff markdown drift report (attribute-level diffs,
+#           embedded JSON decoded, nested module <details>, forces-
+#           replacement flags) — paste into a PR description
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"
@@ -92,13 +96,16 @@ case "$format" in
         }
       }'
     ;;
+  diff)
+    jq -rf "$TISS_LIB/tf-diff.jq" ${files[@]+"${files[@]}"}
+    ;;
   excel)
     out="tf-report.$(ts).xlsx"
     rows | "$TISS_HOME/bin/tiss" json2xlsx "$out"
     logInfo "wrote $out"
     ;;
   *)
-    logError "unknown format '$format' (list, target, md, tree, csv, jsonl, excel)"
+    logError "unknown format '$format' (list, target, md, tree, csv, jsonl, excel, diff)"
     exit 2
     ;;
 esac

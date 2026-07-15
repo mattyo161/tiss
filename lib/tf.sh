@@ -301,3 +301,56 @@ tfApplyRun() {
   fi
   logInfo "apply complete for ${name} (log: ${log})"
 }
+
+# ---- module discovery & sweep support ---------------------------------------------
+# tfAutoJobs — half the cores, clamped to [1,8]: AWS API throttling, not CPU,
+# is the practical ceiling for concurrent plans.
+tfAutoJobs() {
+  local c
+  c="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
+  c=$((c / 2))
+  [ "$c" -lt 1 ] && c=1
+  [ "$c" -gt 8 ] && c=8
+  echo "$c"
+}
+
+# tfDiscoverRootModules — every directory under the cwd containing a *.tf
+# that declares a backend (TISS_TF_MODULE_GREP tunes the marker; the
+# original rule was 'backend "s3"').
+tfDiscoverRootModules() {
+  local marker="${TISS_TF_MODULE_GREP:-backend \"}"
+  {
+    if command -v rg >/dev/null 2>&1; then
+      rg -l "$marker" -g '*.tf' . 2>/dev/null
+    else
+      grep -rl --include='*.tf' "$marker" . 2>/dev/null
+    fi
+  } | while IFS= read -r f; do dirname "$f"; done | sort -u
+}
+
+# tfFreshPlanJson <abs-dir> — succeeds when the latest plan is newer than
+# SKIP_FRESH_HOURS, echoing its json path so callers can reuse it in
+# reports. SKIP_FRESH_HOURS=0/unset disables freshness skipping.
+tfFreshPlanJson() {
+  local dir="$1" latest="$1/.tiss/tfplans/latest.json" prev_epoch age j
+  [ "${SKIP_FRESH_HOURS:-0}" -gt 0 ] || return 1
+  [ -f "$latest" ] || return 1
+  prev_epoch="$(jq -r '.created_epoch // 0' "$latest")"
+  age=$(($(date +%s) - prev_epoch))
+  [ "$age" -lt $((SKIP_FRESH_HOURS * 3600)) ] || return 1
+  j="$(jq -r '.json_file // empty' "$latest")"
+  if [ -n "$j" ]; then
+    case "$j" in
+      /*) [ -f "$j" ] && echo "$j" ;;
+      *) [ -f "$dir/$j" ] && echo "$dir/$j" ;;
+    esac
+  fi
+  return 0
+}
+
+tfHr() { printf '%*s\n' 50 '' | tr ' ' '*'; }
+tfBanner() {
+  tfHr
+  echo "*** $*"
+  tfHr
+}
