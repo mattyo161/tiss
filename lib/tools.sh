@@ -18,6 +18,15 @@ tissRegistryName() { # command name -> package name (mise registry / brew)
   esac
 }
 
+tissCustomInstall() { # tissCustomInstall <tool> -> install command for tools
+  # outside the mise/brew registries, or fail. Keep each one a single
+  # runnable command — it's shown to the user verbatim before running.
+  case "$1" in
+    ajl) echo "uv tool install git+https://github.com/mattyo161/ajl" ;;
+    *) return 1 ;;
+  esac
+}
+
 tissCommandAlias() { # namespace/short name -> real command for passthrough
   # May be multi-word ("aws s3"). Note: a namespace _self handler is
   # usually better than an alias — it can add logic (see ssm/_self.sh).
@@ -32,7 +41,7 @@ tissCommandAlias() { # namespace/short name -> real command for passthrough
 # running with your permissions), but a mistyped passthrough command must
 # never become an "install this package? [Y/n]" prompt. Extend with
 # TISS_INSTALL_ALLOW (space-separated names) in your config.
-TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch"
+TISS_INSTALL_ALLOW_DEFAULT="age ajl aws fzf gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch"
 
 tissInstallAllowed() { # tissInstallAllowed <tool> -> 0 if passthrough-installable
   local t
@@ -57,17 +66,18 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
     return 127
   fi
 
-  local pkg
+  local pkg custom=""
   pkg="$(tissRegistryName "$tool")"
+  custom="$(tissCustomInstall "$tool")" || custom=""
 
   case "${TISS_AUTO_INSTALL:-ask}" in
     never)
-      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: mise use -g $pkg@latest"
+      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: ${custom:-mise use -g $pkg@latest}"
       return 127
       ;;
   esac
 
-  if ! command -v mise >/dev/null 2>&1 && ! command -v brew >/dev/null 2>&1; then
+  if [ -z "$custom" ] && ! command -v mise >/dev/null 2>&1 && ! command -v brew >/dev/null 2>&1; then
     logError "'$tool' is not installed, and neither mise nor brew is available to install it."
     logError "Install mise (https://mise.jdx.dev) to enable auto-install, or install '$tool' manually."
     return 127
@@ -78,9 +88,10 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
     *)
       # Prompt on the controlling terminal so pipelines are unaffected.
       if { : </dev/tty >/dev/tty; } 2>/dev/null; then
-        local reply=""
+        local reply="" inst="$pkg"
+        [ -n "$custom" ] && inst="via \`$custom\`"
         printf "%s: '%s' is not installed. Install %s now? [Y/n] " \
-          "${TISS_NAME:-tiss}" "$tool" "$pkg" >/dev/tty
+          "${TISS_NAME:-tiss}" "$tool" "$inst" >/dev/tty
         IFS= read -r reply </dev/tty || reply=""
         case "$reply" in
           n* | N*) return 127 ;;
@@ -92,9 +103,19 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
       ;;
   esac
 
+  if [ -n "$custom" ]; then
+    # Tools outside the mise/brew registries carry their own install
+    # command (tissCustomInstall) — shown verbatim, run verbatim.
+    ensureTool uv || return 127
+    logInfo "Installing $tool: $custom"
+    # shellcheck disable=SC2086  # the install command is intentionally word-split
+    $custom >&2 || {
+      logError "could not install $tool ($custom failed)"
+      return 127
+    }
   # mise first (version-pinned, no sudo); brew fallback for tools outside
   # mise's registry (e.g. miller).
-  if command -v mise >/dev/null 2>&1 && mise use -g "$pkg@latest" >/dev/null 2>&1; then
+  elif command -v mise >/dev/null 2>&1 && mise use -g "$pkg@latest" >/dev/null 2>&1; then
     logInfo "Installed $pkg via mise."
   elif command -v brew >/dev/null 2>&1; then
     logInfo "Installing $pkg via brew..."

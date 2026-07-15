@@ -81,6 +81,14 @@
 ## forever). The .json/.log/run.json artifacts always stay, for reports.
 # cfg TISS_TF_PLAN_TTL 1d
 
+## --- ajl wrapper -------------------------------------------------------------
+
+## How long `tiss ajl` caches read results (get-*/describe-*/list-*)
+# cfg TISS_AJL_CACHE_DURATION 1h
+
+## Encrypt cached ajl results at rest (1 = on)
+# cfg TISS_AJL_CACHE_ENCRYPT 0
+
 ## --- ssm wrapper -------------------------------------------------------------
 
 ## How long `tiss ssm` caches read results (tiss duration grammar: 30 = 30m)
