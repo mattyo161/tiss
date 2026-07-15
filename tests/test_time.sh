@@ -25,4 +25,11 @@ d="$(($(utc -1h) - $(utc)))"
 assertEq "ts2js epoch to ISO8601 UTC" "2026-01-01T00:00:00Z" "$(ts2js 1767225600)"
 assertMatch "epoch2ts compact form" '^[0-9]{8}T[0-9]{6}$' "$(epoch2ts 1767225600)"
 
+# The command wrapper (regression: time.sh was a saveData copy-paste).
+assertMatch "tiss time defaults to ts" '^[0-9]{8}T[0-9]{6}$' "$("$TISS_BIN" time 2>/dev/null)"
+assertMatch "tiss time ts" '^[0-9]{8}T[0-9]{6}$' "$("$TISS_BIN" time ts 2>/dev/null)"
+assertEq "tiss time dur2s" 5400 "$("$TISS_BIN" time dur2s 1h30m 2>/dev/null)"
+assertEq "tiss time ts2js" "2026-01-01T00:00:00Z" "$("$TISS_BIN" time ts2js 1767225600 2>/dev/null)"
+assertExit "tiss time rejects unknown subcommand" 2 "$TISS_BIN" time bogus
+
 finish
