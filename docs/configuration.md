@@ -41,7 +41,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_RMAFTER_INTERVAL` | `60` | Max seconds the rmAfter background monitor sleeps between reap checks |
 | `TISS_TF_AUTO_APPLY` | `ask` | After `tf plan` finds changes: `ask` prompts y/N, `always` applies automatically, `never` stays hands-off. Also governs the `tf apply` prompt |
 | `TISS_TF_PLAN_TTL` | `1d` | How long saved `.tfplan` files live before self-destructing (`0` = keep forever); json/log/metadata always stay for reports |
-| `TISS_AJL_CACHE_DURATION` | `1h` | How long `tiss ajl` caches read results (`get-*`/`describe-*`/`list-*`; `--params-json` streams are never cached) |
+| `TISS_AJL_CACHE_DURATION` | `15m` | How long `tiss ajl` caches read results (`get-*`/`describe-*`/`list-*`; `--params-json` streams are never cached) |
 | `TISS_AJL_CACHE_ENCRYPT` | `0` | Encrypt cached ajl results at rest (`1` to enable) |
 | `TISS_SSM_CACHE_DURATION` | `1h` | How long `tiss ssm` caches read results (tiss duration grammar) |
 | `TISS_SSM_CACHE_ENCRYPT` | `1` | Encrypt cached ssm results at rest (`0` to disable) |

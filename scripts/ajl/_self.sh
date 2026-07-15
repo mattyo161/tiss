@@ -27,7 +27,7 @@ case "${1:-}" in
     ;;
 esac
 
-cfg TISS_AJL_CACHE_DURATION 1h
+cfg TISS_AJL_CACHE_DURATION 15m
 cfg TISS_AJL_CACHE_ENCRYPT 0
 
 streaming=0
