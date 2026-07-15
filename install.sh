@@ -54,6 +54,13 @@ if [ ! -f "$cfg_dir/config.sh" ]; then
   say "created $cfg_dir/config.sh (all defaults, documented — uncomment to override)"
 fi
 
+# Seed the suggested shortcuts set the same way (uncomment to activate).
+if [ ! -f "$cfg_dir/shortcuts" ]; then
+  mkdir -p "$cfg_dir"
+  cp "$dest/etc/shortcuts.example" "$cfg_dir/shortcuts"
+  say "created $cfg_dir/shortcuts (muscle-memory names, commented — see: $name self shortcuts)"
+fi
+
 say "checking your setup..."
 "$bin_dir/$name" self doctor || true
 

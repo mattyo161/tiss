@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # @description Muscle-memory shortcuts — bare names that run tiss commands
-# @usage tiss self shortcuts [list|add NAME COMMAND...|remove NAME|sync]
+# @usage tiss self shortcuts [list|add NAME COMMAND...|remove NAME|sync|edit|path]
 # @example tiss self shortcuts add tfplan tf plan
 # @example tiss self shortcuts add saveData saveData
-# @example tiss self shortcuts sync
+# @example tiss self shortcuts edit
 #
 # A shortcut makes a tiss command feel native: `tfplan` instead of
 # `tiss tf plan` — a real executable on your PATH, so it works in
@@ -22,8 +22,17 @@ set -euo pipefail
 source "$TISS_LIB/init.sh"
 
 shortcutsFile="$TISS_CONFIG/shortcuts"
+template="$TISS_HOME/etc/shortcuts.example"
 shims="$(tissShims)"
 dispatcher="$TISS_HOME/bin/tiss"
+
+seed() { # first touch: start from the commented suggested set
+  if [ ! -f "$shortcutsFile" ]; then
+    mkdir -p "$TISS_CONFIG"
+    cp "$template" "$shortcutsFile"
+    logInfo "created $shortcutsFile (suggested set, commented — uncomment to activate)"
+  fi
+}
 
 sourceTag() { # sourceTag <definition-file> -> user | core | tree name
   case "$1" in
@@ -181,6 +190,15 @@ case "${1:-list}" in
   sync)
     cmdSync
     ;;
+  path)
+    seed
+    echo "$shortcutsFile"
+    ;;
+  edit)
+    seed
+    "${EDITOR:-vi}" "$shortcutsFile"
+    cmdSync # hand-edits reconcile immediately
+    ;;
   add)
     [ $# -ge 3 ] || {
       logError "usage: $TISS_NAME self shortcuts add NAME COMMAND..."
@@ -197,7 +215,7 @@ case "${1:-list}" in
     cmdRemove "$2"
     ;;
   *)
-    logError "unknown subcommand '${1}' (list, add NAME COMMAND..., remove NAME, sync)"
+    logError "unknown subcommand '${1}' (list, add NAME COMMAND..., remove NAME, sync, edit, path)"
     exit 2
     ;;
 esac

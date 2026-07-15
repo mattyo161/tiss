@@ -55,7 +55,10 @@ behaves exactly as before, even if some tree defines a shortcut `x`).
 
 `~/.config/tiss/shortcuts` (yours) and each overlay tree's
 `etc/shortcuts`, one `name = command words` per line, `#` comments
-allowed:
+allowed. Your file is seeded on install (or first `tiss self shortcuts
+edit`/`path`) from `etc/shortcuts.example` — a commented suggested set;
+uncomment what your fingers already know. `edit` opens it in `$EDITOR`
+and syncs the shim dir when you're done:
 
 ```
 # mine

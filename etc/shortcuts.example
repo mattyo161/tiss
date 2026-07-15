@@ -1,0 +1,24 @@
+# tiss shortcuts — muscle-memory names for tiss commands
+# Lives at ~/.config/tiss/shortcuts (create/open it with: tiss self shortcuts edit)
+#
+# One `name = command words` per line: the name becomes a real command
+# (a shim on your PATH) that runs `tiss <command words>`. Uncomment a
+# line to activate it, then run `tiss self shortcuts sync` (edit runs
+# sync for you). Day to day, prefer:  tiss self shortcuts add NAME COMMAND...
+#
+# A suggested starter set:
+# sd = saveData
+# rd = readData
+# lsData = lsData
+# ts = time ts
+# tfplan = tf plan
+# encrypt = encrypt
+# decrypt = decrypt
+# tf = tf
+# tfapply = tf apply
+# tfshow = tf show
+# saveData = saveData
+# readData = readData
+# cacheExec = cacheExec
+# bkup = bkup
+# ttmux = tmux go

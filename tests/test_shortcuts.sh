@@ -95,6 +95,21 @@ echo 'acmepath = self config list' >>"$TISS_CONFIG/shortcuts"
 assertMatch "user definition beats the tree's" 'SETTING' "$(TISS_PATH="$tree" "$TISS_SHIMS/acmepath" 2>/dev/null)"
 "$TISS_BIN" self shortcuts remove acmepath >/dev/null 2>&1
 
+# --- edit/path seed from the commented template ----------------------------------------
+mv "$TISS_CONFIG/shortcuts" "$TISS_CONFIG/shortcuts.saved"
+"$TISS_BIN" self shortcuts sync >/dev/null 2>&1 # prune shims of the moved-away file
+assertEq "path seeds and prints the file" "$TISS_CONFIG/shortcuts" "$("$TISS_BIN" self shortcuts path 2>/dev/null)"
+assertMatch "seeded file is the commented suggested set" '^# sd = saveData' "$(cat "$TISS_CONFIG/shortcuts")"
+assertFileMissing "commented suggestions create no shims" "$TISS_SHIMS/sd"
+rm -f "$TISS_CONFIG/shortcuts"
+EDITOR=true "$TISS_BIN" self shortcuts edit >/dev/null 2>&1
+assertFileExists "edit seeds the file too" "$TISS_CONFIG/shortcuts"
+printf 'edittest = self config path\n' >>"$TISS_CONFIG/shortcuts"
+EDITOR=true "$TISS_BIN" self shortcuts edit >/dev/null 2>&1
+assertFileExists "edit syncs after the editor exits" "$TISS_SHIMS/edittest"
+mv "$TISS_CONFIG/shortcuts.saved" "$TISS_CONFIG/shortcuts"
+"$TISS_BIN" self shortcuts sync >/dev/null 2>&1
+
 # --- self init emits the guarded PATH line ---------------------------------------------
 emit="$("$TISS_BIN" self init 2>/dev/null)"
 assertMatch "self init emits the shim dir" "$TISS_SHIMS" "$emit"
