@@ -127,7 +127,9 @@ cmdAdd() {
       ;;
   esac
   local real
-  if real="$(command -v "$name" 2>/dev/null)"; then
+  # PATH executables only (type -P): the sourced tiss helpers live as
+  # functions in THIS shell and would self-trigger via command -v.
+  if real="$(type -P "$name")"; then
     logWarn "'$name' shadows $real (the shim dir goes first on PATH, so your shortcut wins)"
   fi
   mkdir -p "$TISS_CONFIG"
