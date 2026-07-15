@@ -75,7 +75,7 @@ learnExec() { # learnExec <command> [args...] — run it, teaching what ran
 # Env vars that change a command's output must change its cache key. The
 # defaults cover the usual cloud context; extend with TISS_CACHE_ENV
 # (space-separated names). Only vars that are actually set participate.
-TISS_CACHE_ENV_DEFAULT="TISS_ENV AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_ACCESS_KEY_ID GOOGLE_CLOUD_PROJECT CLOUDSDK_ACTIVE_CONFIG_NAME KUBECONFIG"
+TISS_CACHE_ENV_DEFAULT="TISS_ENV AWS_PROFILE AWS_DEFAULT_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_ACCESS_KEY_ID GOOGLE_CLOUD_PROJECT CLOUDSDK_ACTIVE_CONFIG_NAME KUBECONFIG"
 
 tissSha256() { # stdin -> hex digest (shasum on macOS, sha256sum on linux)
   if command -v shasum >/dev/null 2>&1; then
