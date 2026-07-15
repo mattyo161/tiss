@@ -18,6 +18,66 @@ tissRegistryName() { # command name -> package name (mise registry / brew)
   esac
 }
 
+tissMiseBootstrap() { # official installer -> ~/.local/bin, activated in-process
+  # Preflight what the installer itself needs, and point at the exact
+  # package-manager command when something is missing (truly bare boxes:
+  # minimal containers lack even tar).
+  local missing="" t
+  for t in curl tar gzip; do
+    command -v "$t" >/dev/null 2>&1 || missing="$missing $t"
+  done
+  if [ -n "$missing" ]; then
+    logError "bootstrapping mise needs:$missing"
+    if command -v dnf >/dev/null 2>&1; then
+      logError "  install first:  sudo dnf install -y$missing"
+    elif command -v yum >/dev/null 2>&1; then
+      logError "  install first:  sudo yum install -y$missing"
+    elif command -v apt-get >/dev/null 2>&1; then
+      logError "  install first:  sudo apt-get install -y$missing"
+    fi
+    return 127
+  fi
+  logInfo "Bootstrapping mise (curl https://mise.run | sh)..."
+  curl -fsSL https://mise.run | sh >&2 || {
+    logError "mise bootstrap failed — see https://mise.jdx.dev for alternatives"
+    return 127
+  }
+  # The installer lands in ~/.local/bin: make it visible to THIS process
+  # (and its children) so the command you originally typed still works.
+  case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+  command -v mise >/dev/null 2>&1 || {
+    logError "bootstrap ran but mise is not at ~/.local/bin/mise — check the installer output above"
+    return 127
+  }
+  logInfo "mise is ready — your shells activate it via:  eval \"\$(${TISS_NAME:-tiss} self init)\""
+}
+
+tissBrewActivate() { # 0 if brew is usable; finds it even if shellenv never ran
+  command -v brew >/dev/null 2>&1 && return 0
+  local b
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+    if [ -x "$b" ]; then
+      eval "$("$b" shellenv)"
+      logInfo "brew found at $b but not on your shell's PATH — the rc line 'eval \"\$(${TISS_NAME:-tiss} self init)\"' fixes that"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# shellcheck disable=SC2016  # the hints are copy-paste lines, $ stays literal
+tissBrewHint() { # exact steps: the installer + the platform's activation line
+  logError "get Homebrew with:"
+  logError '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  case "$(uname -s)" in
+    Darwin) logError '  eval "$(/opt/homebrew/bin/brew shellenv)"    # then add to your rc file' ;;
+    *) logError '  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"    # then add to your rc file' ;;
+  esac
+}
+
 tissCustomInstall() { # tissCustomInstall <tool> -> install command for tools
   # outside the mise/brew registries, or fail. Keep each one a single
   # runnable command — it's shown to the user verbatim before running.
@@ -72,23 +132,18 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
 
   case "${TISS_AUTO_INSTALL:-ask}" in
     never)
-      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: ${custom:-mise use -g $pkg@latest}"
+      local hint="mise use -g $pkg@latest"
+      [ "$tool" = "mise" ] && hint="curl https://mise.run | sh"
+      [ -n "$custom" ] && hint="$custom"
+      logError "'$tool' is not installed (TISS_AUTO_INSTALL=never). Try: $hint"
       return 127
       ;;
-  esac
-
-  if [ -z "$custom" ] && ! command -v mise >/dev/null 2>&1 && ! command -v brew >/dev/null 2>&1; then
-    logError "'$tool' is not installed, and neither mise nor brew is available to install it."
-    logError "Install mise (https://mise.jdx.dev) to enable auto-install, or install '$tool' manually."
-    return 127
-  fi
-
-  case "${TISS_AUTO_INSTALL:-ask}" in
     always) ;;
     *)
       # Prompt on the controlling terminal so pipelines are unaffected.
       if { : </dev/tty >/dev/tty; } 2>/dev/null; then
         local reply="" inst="$pkg"
+        [ "$tool" = "mise" ] && inst="via \`curl https://mise.run | sh\`"
         [ -n "$custom" ] && inst="via \`$custom\`"
         printf "%s: '%s' is not installed. Install %s now? [Y/n] " \
           "${TISS_NAME:-tiss}" "$tool" "$inst" >/dev/tty
@@ -103,6 +158,13 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
       ;;
   esac
 
+  if [ "$tool" = "mise" ]; then
+    # mise is the install engine itself: bootstrap it with the official
+    # installer rather than pointing at a URL and stranding the user.
+    tissMiseBootstrap
+    return $?
+  fi
+
   if [ -n "$custom" ]; then
     # Tools outside the mise/brew registries carry their own install
     # command (tissCustomInstall) — shown verbatim, run verbatim.
@@ -113,23 +175,40 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
       logError "could not install $tool ($custom failed)"
       return 127
     }
-  # mise first (version-pinned, no sudo); brew fallback for tools outside
-  # mise's registry (e.g. miller).
-  elif command -v mise >/dev/null 2>&1 && mise use -g "$pkg@latest" >/dev/null 2>&1; then
+  # mise first (version-pinned, no sudo, bootstraps itself); brew fallback
+  # for tools outside mise's registry (e.g. miller).
+  elif ensureTool mise && mise use -g "$pkg@latest" >/dev/null 2>&1; then
     logInfo "Installed $pkg via mise."
-  elif command -v brew >/dev/null 2>&1; then
+  elif tissBrewActivate; then
     logInfo "Installing $pkg via brew..."
     brew install "$pkg" >&2 || {
       logError "could not install $pkg (mise registry miss, brew failed)"
       return 127
     }
   else
-    logError "could not install $pkg via mise, and brew is not available"
+    if command -v mise >/dev/null 2>&1; then
+      logError "'$pkg' is outside mise's registry, and brew is not installed."
+    else
+      logError "mise could not be set up, and brew is not installed."
+    fi
+    tissBrewHint
     return 127
   fi
 
   if ! command -v "$tool" >/dev/null 2>&1; then
-    logError "Installed $pkg, but '$tool' is still not on PATH — is mise activated in your shell?"
+    # Installed but invisible: the shell hasn't activated mise. Make the
+    # CURRENT invocation work through mise's shims; future shells get the
+    # real activation from the rc line (tiss self init).
+    local mise_shims="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
+    if [ -d "$mise_shims" ]; then
+      case ":$PATH:" in
+        *":$mise_shims:"*) ;;
+        *) export PATH="$mise_shims:$PATH" ;;
+      esac
+    fi
+  fi
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    logError "Installed $pkg, but '$tool' is still not on PATH — activate mise in your shell:  eval \"\$(${TISS_NAME:-tiss} self init)\""
     return 127
   fi
   logInfo "$tool is ready."

@@ -34,7 +34,7 @@ logInfo "tiss $(cat "$TISS_HOME/version.txt" 2>/dev/null || echo dev) — home: 
 
 check "bash" "how are you even running this?" command -v bash
 check "jq (required)" "run: mise use -g jq@latest" command -v jq
-check "mise (enables lazy tool install)" "install: https://mise.jdx.dev" command -v mise
+check "mise (enables lazy tool install)" "any tool-needing tiss command offers to bootstrap it, or: curl https://mise.run | sh" command -v mise
 check "age (encryption engine)" "installs on first 'tiss encrypt', or: mise use -g age@latest" command -v age
 check "encryption identity" "created on first 'tiss encrypt'" test -s "$TISS_CONFIG/age/identity.age"
 check "on PATH as '$TISS_NAME'" "ln -s $TISS_HOME/bin/tiss /usr/local/bin/$TISS_NAME" command -v "$TISS_NAME"

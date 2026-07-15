@@ -66,4 +66,5 @@ say "checking your setup..."
 
 say "done. next steps:"
 say "  $name                          # explore the command tree"
+say "  eval \"\$($name self init)\"           # rc line: mise/brew activation, shortcut shims, self cd"
 say "  eval \"\$($name self completion zsh)\"   # tab completion (~/.zshrc, after compinit)"
