@@ -44,7 +44,7 @@ tissShortcutList() { # merged "name<TAB>expansion<TAB>source-file", first defini
       name="${name%"${name##*[![:space:]]}"}"
       exp="${line#*=}"
       exp="${exp#"${exp%%[![:space:]]*}"}"
-      [ -n "$name" ] && [ -n "$exp" ] || continue
+      if [ -z "$name" ] || [ -z "$exp" ]; then continue; fi
       case "$name" in *[!A-Za-z0-9_.-]*) continue ;; esac
       case "$seen" in *"
 $name
