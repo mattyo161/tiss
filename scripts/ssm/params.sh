@@ -13,8 +13,6 @@
 set -euo pipefail
 source "$TISS_LIB/init.sh"
 
-mode=""
-value=""
 dur="1h"
 refresh=""
 cache=1
@@ -37,10 +35,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# Map the tiss verb onto the right aws subcommand + jq unwrap.
-aws_args=(ssm)
-filter=""
-
 # Front the call with cacheExec unless opted out. Raw aws JSON is what
 # gets cached (encrypted at rest); the jq unwrap to jsonl runs per read.
 runner=()
@@ -50,4 +44,4 @@ if [ "$cache" = 1 ]; then
 fi
 
 # TODO test performance vs ajl
-${runner[@]+"${runner[@]}"} aws ssm describe-parameters "$@" | jq -c '.Parameters[]'
+${runner[@]+"${runner[@]}"} aws ssm describe-parameters ${extra[@]+"${extra[@]}"} | jq -c '.Parameters[]'

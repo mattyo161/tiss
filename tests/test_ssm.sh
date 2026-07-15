@@ -17,6 +17,8 @@ case "$*" in
     printf '{"Parameters":[{"Name":"/x","Value":"8"},{"Name":"/y","Value":"9"}]}\n' ;;
   *get-parameter\ *)
     printf '{"Parameter":{"Name":"/solo","Value":"42"}}\n' ;;
+  *describe-parameters*)
+    printf '{"Parameters":[{"Name":"/dp/one","Type":"String"},{"Name":"/dp/two","Type":"SecureString"}]}\n' ;;
   *)
     echo "aws-shim: $*" ;;
 esac
@@ -84,7 +86,26 @@ ns_help="$("$TISS_BIN" ssm)"
 assertMatch "bare namespace still shows help" 'usage: tiss ssm' "$ns_help"
 assertMatch "handler described in help footer" 'Anything else: Any aws ssm subcommand' "$ns_help"
 comp="$("$TISS_BIN" --complete ssm)"
-assertEq "completion hides _self" "get" "$comp"
+assertEq "completion hides _self" "get
+params" "$comp"
+
+# ssm params: exact script beats the handler; cached describe-parameters
+# unwrapped to jsonl. --recache first: params and the _self handler wrap
+# the same aws argv, so this isolates us from any cache the tests above
+# already planted.
+: >"$AWS_SHIM_LOG"
+"$TISS_BIN" ssm params --recache >/dev/null 2>&1
+assertEq "params --recache hits aws" 1 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+out="$("$TISS_BIN" ssm params 2>/dev/null)"
+assertEq "params emits jsonl rows" 2 "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+assertEq "params rows are jq-ready" "/dp/one" "$(printf '%s\n' "$out" | jq -rs '.[0].Name')"
+assertEq "params served from cache" 1 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+"$TISS_BIN" ssm params --refresh >/dev/null 2>&1
+assertEq "params --refresh forces a real call" 2 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+"$TISS_BIN" ssm params --no-cache >/dev/null 2>&1
+assertEq "params --no-cache bypasses the cache" 3 "$(wc -l <"$AWS_SHIM_LOG" | tr -d ' ')"
+"$TISS_BIN" ssm params --no-cache --max-results 5 >/dev/null 2>&1
+assertMatch "params passes unknown args to aws" 'describe-parameters --max-results 5' "$(tail -1 "$AWS_SHIM_LOG")"
 
 # near-miss: a would-match file that isn't executable fails loudly...
 tree="$TISS_TEST_TMP/overlay"
