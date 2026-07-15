@@ -57,6 +57,35 @@ else
   warn=$((warn + nonexec))
 fi
 
+# Shortcuts need a healthy shim each, and the shim dir on PATH (the
+# dispatcher recorded whether it saw the dir before stripping it).
+shortcuts=0
+shimIssues=0
+shims="$(tissShims)"
+while IFS=$'\t' read -r name _ _; do
+  [ -n "$name" ] || continue
+  shortcuts=$((shortcuts + 1))
+  if [ "$(readlink "$shims/$name" 2>/dev/null)" != "$TISS_HOME/bin/tiss" ]; then
+    logWarn "shortcut '$name' has no working shim — run: $TISS_NAME self shortcuts sync"
+    shimIssues=$((shimIssues + 1))
+  fi
+done < <(tissShortcutList)
+if [ "$shortcuts" -gt 0 ]; then
+  if [ "$shimIssues" -eq 0 ]; then
+    logInfo "ok: $shortcuts shortcut shim(s) in sync"
+    ok=$((ok + 1))
+  else
+    warn=$((warn + shimIssues))
+  fi
+  if [ "${TISS_SHIMS_ON_PATH:-0}" = 1 ]; then
+    logInfo "ok: shim dir on PATH ($shims)"
+    ok=$((ok + 1))
+  else
+    logWarn "shim dir not on PATH — add to your rc file:  eval \"\$($TISS_NAME self init)\""
+    warn=$((warn + 1))
+  fi
+fi
+
 if [ "$warn" -eq 0 ]; then
   logInfo "All $ok checks passed — you're all set."
 else

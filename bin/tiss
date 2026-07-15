@@ -45,6 +45,28 @@ TISS_STATE="${TISS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/tiss}"
 export TISS_DATA TISS_STATE
 export TISS_PATH="${TISS_PATH:-}" # resolved by config; scripts inherit it
 
+# Shortcut shims (`tiss self shortcuts`): names in $TISS_SHIMS symlink
+# back to this dispatcher and route via argv[0] in main. The shim dir is
+# stripped from PATH here so child scripts and passthrough tools only
+# ever see real commands — recursion through a shim is structurally
+# impossible. TISS_SHIMS_ON_PATH records what we saw, for doctor/sync.
+TISS_SHIMS="$(tissShims)"
+TISS_SHIMS_ON_PATH=0
+stripped=""
+oldIFS="$IFS"
+IFS=':'
+for dir in $PATH; do
+  if [ "${dir%/}" = "${TISS_SHIMS%/}" ]; then
+    TISS_SHIMS_ON_PATH=1
+    continue
+  fi
+  stripped="$stripped${stripped:+:}$dir"
+done
+IFS="$oldIFS"
+PATH="$stripped"
+unset stripped dir oldIFS
+export PATH TISS_SHIMS TISS_SHIMS_ON_PATH
+
 # --- discovery ---------------------------------------------------------------
 listScripts() { # listScripts <scripts-root> -> executable files, sorted
   find "$1" -type f | sort | while IFS= read -r f; do
@@ -336,6 +358,28 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
 
 # --- main --------------------------------------------------------------------
 main() {
+  # Invoked under a shortcut name (a shim symlink living in $TISS_SHIMS):
+  # prepend its expansion and route normally. Only shims multiplex — a
+  # symlink anywhere else stays a plain alias, so shortcut definitions
+  # can never hijack an alias name. A leading @env keeps its place so
+  # profiles still load first (`tfplan @dev -target x` works).
+  local expansion
+  if [ "$(dirname "$0")" -ef "$TISS_SHIMS" ] \
+    && expansion="$(tissShortcutLookup "$TISS_NAME")"; then
+    case "${1:-}" in
+      @?*)
+        local envWord="$1"
+        shift
+        # shellcheck disable=SC2086 # word-splitting the expansion is the point
+        set -- "$envWord" $expansion "$@"
+        ;;
+      *)
+        # shellcheck disable=SC2086
+        set -- $expansion "$@"
+        ;;
+    esac
+  fi
+
   # @<name> prefix: load that environment profile, then continue routing.
   # Bare `tiss @dev` drops into the dev shell inside the environment.
   local envName

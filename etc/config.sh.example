@@ -48,6 +48,10 @@
 ## Where tiss keeps state (rmAfter schedules, history log)
 # cfg TISS_STATE "$HOME/.local/state/tiss"
 
+## Where shortcut shims live — symlinks created by 'tiss self shortcuts',
+## put on PATH by the rc line from 'tiss self init'
+# cfg TISS_SHIMS "$HOME/.local/share/tiss/shims"
+
 ## --- cacheExec ---------------------------------------------------------------
 
 ## Extra env var names (space-separated) that participate in cache keys,

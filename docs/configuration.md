@@ -34,6 +34,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss self tree add` (persists it here for you) |
 | `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
 | `TISS_STATE` | `~/.local/state/tiss` | State: `rmAfter` schedules, the `learnExec` history log |
+| `TISS_SHIMS` | `~/.local/share/tiss/shims` | Shortcut shim dir ([shortcuts](shortcuts.md)): each shortcut name is a symlink here back to the dispatcher. `tiss self init` puts it first on PATH; the dispatcher strips it from child PATHs |
 | `TISS_CACHE_ENV` | empty | Extra env var names (space-separated) added to `cacheExec` keys, on top of the built-ins (`AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `GOOGLE_CLOUD_PROJECT`, `CLOUDSDK_ACTIVE_CONFIG_NAME`, `KUBECONFIG`) |
 | `TISS_NO_CACHE` | `0` | `1` bypasses all `cacheExec` reads *and* writes. Usually set per-invocation by the `--no-cache` flag (which cascades it to child processes) rather than persistently |
 | `TISS_RMAFTER_PATHS` | home + tmp locations | Deletion allowlist: `rmAfter` only ever deletes under these colon-separated prefixes, enforced at schedule *and* reap time |
