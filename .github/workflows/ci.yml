@@ -42,7 +42,10 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y shellcheck
-          shellcheck bin/tiss lib/*.sh scripts/*.sh scripts/self/*.sh tests/*.sh
+          # every .sh at any depth (polyglot leaves lint their own way),
+          # plus the two bare-name entry points
+          find lib scripts tests -name '*.sh' -print0 \
+            | xargs -0 shellcheck bin/tiss install.sh
 
   test:
     strategy:
