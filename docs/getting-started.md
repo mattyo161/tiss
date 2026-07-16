@@ -4,13 +4,13 @@
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/mattyo161/tiss/main/install.sh | bash
-tiss self doctor      # tells you what, if anything, to fix
+tiss doctor      # tells you what, if anything, to fix
 ```
 
 Tab completion (live from the tree — new commands complete instantly):
 
 ```sh
-eval "$(tiss self completion zsh)"    # ~/.zshrc, after compinit
+eval "$(tiss completion zsh)"    # ~/.zshrc, after compinit
 ```
 
 Prefer a different name? `bash -s -- x` at install time (or symlink
@@ -64,7 +64,7 @@ logInfo "about to greet"
 echo "hello, ${1:-there}"
 EOF
 chmod +x ~/my-tiss/scripts/hello.sh     # ← REQUIRED: routing only sees executables
-tiss self tree add ~/my-tiss
+tiss pile add ~/my-tiss
 
 tiss hello world                         # runs
 tiss hello help                          # self-documents

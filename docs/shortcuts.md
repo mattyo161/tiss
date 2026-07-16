@@ -6,16 +6,16 @@ executable on your PATH, so it works everywhere a command works:
 interactive shells, other scripts, `xargs`, `find -exec`, cron.
 
 ```sh
-tiss self shortcuts add tfplan tf plan       # tfplan == tiss tf plan
-tiss self shortcuts add saveData saveData    # saveData == tiss saveData
-tiss self shortcuts add sd saveData          # or shorter still
+tiss shortcuts add tfplan tf plan       # tfplan == tiss tf plan
+tiss shortcuts add saveData saveData    # saveData == tiss saveData
+tiss shortcuts add sd saveData          # or shorter still
 tfplan -target module.vpc                    # muscle memory restored
 ```
 
-One-time setup — the same rc line that enables `tiss self cd`:
+One-time setup — one rc line wires everything (PATH, mise/brew, shims):
 
 ```sh
-eval "$(tiss self init)"     # in ~/.zshrc or ~/.bashrc
+eval "$(tiss init)"     # in ~/.zshrc or ~/.bashrc
 ```
 
 That puts the shim dir (`TISS_SHIMS`, default `~/.local/share/tiss/shims`)
@@ -55,7 +55,7 @@ behaves exactly as before, even if some tree defines a shortcut `x`).
 
 `~/.config/tiss/shortcuts` (yours) and each overlay tree's
 `etc/shortcuts`, one `name = command words` per line, `#` comments
-allowed. Your file is seeded on install (or first `tiss self shortcuts
+allowed. Your file is seeded on install (or first `tiss shortcuts
 edit`/`path`) from `etc/shortcuts.example` — a commented suggested set;
 uncomment what your fingers already know. `edit` opens it in `$EDITOR`
 and syncs the shim dir when you're done:
@@ -68,9 +68,9 @@ sd     = saveData
 
 Your file wins, then trees most-specific first — the same precedence as
 configuration, so a company tree can ship suggested shortcuts and you
-can shadow any of them. `tiss self shortcuts` shows the merged view
+can shadow any of them. `tiss shortcuts` shows the merged view
 with each entry's source and shim health; hand-edits are fine — run
-`tiss self shortcuts sync` afterwards to reconcile the shim dir (it
+`tiss shortcuts sync` afterwards to reconcile the shim dir (it
 only ever touches symlinks that point at a tiss dispatcher; foreign
 files are left alone and reported).
 
@@ -80,5 +80,5 @@ Names you pick shadow real tools *in your interactive shell only* (the
 shim dir is first on PATH; downstream it's stripped). `add` warns when
 a name shadows something (`'ts' shadows /opt/homebrew/bin/ts`) — that's
 usually what you wanted, but now it's a choice, not an accident.
-`tiss self doctor` checks that every shortcut has a healthy shim and
+`tiss doctor` checks that every shortcut has a healthy shim and
 that the shim dir is actually on your PATH.

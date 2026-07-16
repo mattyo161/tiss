@@ -33,7 +33,7 @@ assertEq "user profile wins over tree" "dev|user-wins|us-east-1" "$("$TISS_BIN" 
 err="$("$TISS_BIN" @nope envprobe 2>&1 || true)"
 assertExit "unknown env exits 2" 2 "$TISS_BIN" @nope envprobe
 assertMatch "unknown env lists available" 'available:.*dev' "$err"
-assertMatch "unknown env says how to create" 'self env edit nope' "$err"
+assertMatch "unknown env says how to create" 'env edit nope' "$err"
 
 # self env list/show.
 assertMatch "self env list shows dev" '(^|\n)dev(\n|$)' "$("$TISS_BIN" self env list 2>/dev/null)"

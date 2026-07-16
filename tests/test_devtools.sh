@@ -51,19 +51,17 @@ if command -v git >/dev/null 2>&1; then
   selfrun checkout.sh feature/share >/dev/null 2>&1
   assertEq "self checkout switches branch" "feature/share" "$(git -C "$fake" branch --show-current)"
 
-  assertEq "self cd prints TISS_HOME" "$fake" "$(selfrun cd.sh 2>/dev/null)"
 else
   echo "  skip: git missing" >&2
 fi
 
-# --- self init (rc integration) -------------------------------------------------------
-emit="$("$TISS_BIN" self init)"
-assertMatch "init wrapper defines the function" '^tiss\(\)' "$emit"
-assertMatch "init wrapper pushd's on self cd" 'pushd .*command tiss self cd' "$emit"
-assertMatch "init wrapper forwards everything else" 'command tiss "\$@"' "$emit"
-# and it's argv[0]-aware
-ln -sf "$TISS_BIN" "$TISS_TEST_TMP/nri"
-assertMatch "init wrapper follows the alias" '^nri\(\)' "$("$TISS_TEST_TMP/nri" self init)"
+# --- init (rc integration; the old self-cd wrapper is gone with cd itself) -------------
+emit="$("$TISS_BIN" init)"
+assertMatch "init puts ~/.local/bin on PATH" 'HOME/.local/bin' "$emit"
+case "$emit" in
+  *"pushd"* | *"tiss()"*) _report FAIL "init still emits the dead self-cd wrapper" ;;
+  *) _report ok "init emission carries no wrapper function" ;;
+esac
 
 # --- self shell (the dev REPL) ---------------------------------------------------------
 repl="$(printf 'dur2s 1w1d\npwd\nexit\n' | "$TISS_BIN" self shell 2>/dev/null)"

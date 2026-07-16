@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # @description Check your tiss installation and guide you through anything missing
-# @usage tiss self doctor
-# @example tiss self doctor
+# @usage tiss doctor
+# @example tiss doctor
 #
 # The intuitive way in: run this first on a new machine and follow the hints.
 #
@@ -39,6 +39,27 @@ check "age (encryption engine)" "installs on first 'tiss encrypt', or: mise use 
 check "encryption identity" "created on first 'tiss encrypt'" test -s "$TISS_CONFIG/age/identity.age"
 check "on PATH as '$TISS_NAME'" "ln -s $TISS_HOME/bin/tiss /usr/local/bin/$TISS_NAME" command -v "$TISS_NAME"
 
+# A tree shipping a reserved lexicon name is dead code at best,
+# deception at worst — routing resolves the lexicon from core only.
+shadowed=0
+while IFS= read -r tree; do
+  [ "$tree" = "$TISS_HOME" ] && continue
+  for w in $TISS_LEXICON self; do
+    for f in "$tree/scripts/$w" "$tree/scripts/$w".*; do
+      if [ -e "$f" ]; then
+        logWarn "tree '$(basename "$tree")' ships reserved name '$w' — ignored by routing: $f"
+        shadowed=$((shadowed + 1))
+      fi
+    done
+  done
+done < <(tissTrees)
+if [ "$shadowed" -eq 0 ]; then
+  logInfo "ok: no tree shadows the reserved lexicon"
+  ok=$((ok + 1))
+else
+  warn=$((warn + shadowed))
+fi
+
 # Non-executable scripts are invisible to routing — the #1 authoring trap.
 nonexec=0
 while IFS= read -r tree; do
@@ -66,7 +87,7 @@ while IFS=$'\t' read -r name _ _; do
   [ -n "$name" ] || continue
   shortcuts=$((shortcuts + 1))
   if [ "$(readlink "$shims/$name" 2>/dev/null)" != "$TISS_HOME/bin/tiss" ]; then
-    logWarn "shortcut '$name' has no working shim — run: $TISS_NAME self shortcuts sync"
+    logWarn "shortcut '$name' has no working shim — run: $TISS_NAME shortcuts sync"
     shimIssues=$((shimIssues + 1))
   fi
 done < <(tissShortcutList)
@@ -81,7 +102,7 @@ if [ "$shortcuts" -gt 0 ]; then
     logInfo "ok: shim dir on PATH ($shims)"
     ok=$((ok + 1))
   else
-    logWarn "shim dir not on PATH — add to your rc file:  eval \"\$($TISS_NAME self init)\""
+    logWarn "shim dir not on PATH — add to your rc file:  eval \"\$($TISS_NAME init)\""
     warn=$((warn + 1))
   fi
 fi

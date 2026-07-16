@@ -15,7 +15,7 @@
 # Definitions live in $TISS_CONFIG/shortcuts (yours) and each tree's
 # etc/shortcuts — one `name = command words` per line, # comments fine.
 # Your file wins, then trees most-specific first (config precedence,
-# same story). Managed by `tiss self shortcuts add|remove|list|sync`.
+# same story). Managed by `tiss shortcuts add|remove|list|sync`.
 
 tissShims() { # the shim directory (setting: TISS_SHIMS)
   printf '%s\n' "${TISS_SHIMS:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/shims}"

@@ -16,6 +16,20 @@
 #   environment > ~/.config/tiss/config.sh > overlay configs (specific first)
 #   > core etc/config.sh
 #
+# --- the reserved lexicon -------------------------------------------------------
+# These words are the tiss contract: the dispatcher resolves them ONLY
+# from the core's scripts/self/ files, BEFORE the pile walk — no tree can
+# shadow `pull` or `doctor`, and no shortcut can take their names. The
+# real binaries stay reachable behind the explicit escape: `tiss -- env`.
+TISS_LEXICON="checkout completion config doctor env help init pile pull shell shortcuts test version"
+
+tissReserved() { # tissReserved <word> -> 0 if part of the reserved lexicon
+  case " $TISS_LEXICON " in
+    *" $1 "*) return 0 ;;
+  esac
+  return 1
+}
+
 cfg() { # cfg VAR value... -> set VAR unless it already has a value
   local var="$1"
   shift
@@ -117,7 +131,7 @@ tissLoadEnv() { # tissLoadEnv <name> — source profiles, export TISS_ENV
     found=1
   done < <(tissEnvFiles "$name")
   if [ "$found" = 0 ]; then
-    logError "no environment '$name' — create one: ${TISS_NAME:-tiss} self env edit $name"
+    logError "no environment '$name' — create one: ${TISS_NAME:-tiss} env edit $name"
     local avail
     avail="$(tissListEnvs)"
     [ -n "$avail" ] && logError "available:$(printf ' %s' "$avail" | tr '\n' ' ')"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# @description Manage overlay script trees (list, add, remove, resolve)
-# @usage tiss self tree <list [--json]|add PATH|SPEC [--repo URL] [--branch BR]|remove PATH|NAME|resolve SPEC>
-# @example tiss self tree add devops                    # same as: tiss +devops
-# @example tiss self tree add prod --repo git@github.com:acme/tiss_packages.git --branch env/prod
-# @example tiss self tree resolve devops                # where would this fetch from? (jsonl)
+# @description Manage the pile — the ordered stack of overlay trees, top wins
+# @usage tiss pile <list [--json]|add PATH|SPEC [--repo URL] [--branch BR]|remove PATH|NAME|resolve SPEC>
+# @example tiss pile add devops                    # same as: tiss +devops
+# @example tiss pile add prod --repo git@github.com:acme/tiss_packages.git --branch env/prod
+# @example tiss pile resolve devops                # where would this fetch from? (jsonl)
 #
 # Overlay trees layer private/company commands over the core: most-specific
 # first, first match wins. A tree is a directory containing scripts/
@@ -55,7 +55,7 @@ $cmd
   local d
   for d in "$(tissTreesDir)"/*; do
     [ -d "$d/scripts" ] || continue
-    tissTreeStack | grep -qx "$d" && continue
+    tissPile | grep -qx "$d" && continue
     printf '  %-40s (installed, disabled — enable: %s +%s)\n' \
       "$(basename "$d")" "$TISS_NAME" "$(basename "$d")"
   done
@@ -78,10 +78,10 @@ cmdListJson() { # every tree as jsonl: core + registered + installed-but-disable
   tissTreeInfoJson "$TISS_HOME" true
   while IFS= read -r t; do
     tissTreeInfoJson "$t" true
-  done < <(tissTreeStack)
+  done < <(tissPile)
   for t in "$(tissTreesDir)"/*; do
     [ -d "$t/scripts" ] || continue
-    tissTreeStack | grep -qx "$t" && continue
+    tissPile | grep -qx "$t" && continue
     tissTreeInfoJson "$t" false
   done
 }
@@ -90,12 +90,12 @@ cmdAdd() { # cmdAdd <path|spec> <repo> <branch>
   local spec="$1" repo="$2" branch="$3" abs dir
   # An existing tree directory (and no mapping flags) is a local add.
   if [ -z "$repo$branch" ] && abs="$(cd -P "$spec" 2>/dev/null && pwd)" && [ -d "$abs/scripts" ]; then
-    tissTreeEnable "$abs"
+    tissPileAdd "$abs"
     cmdList
     return 0
   fi
   dir="$(tissTreeInstall "$spec" "$repo" "$branch")" || exit 2
-  tissTreeEnable "$dir"
+  tissPileAdd "$dir"
   cmdList
 }
 
@@ -107,7 +107,7 @@ cmdRemove() {
     logError "not registered: $path"
     exit 2
   }
-  tissTreeDisable "$abs"
+  tissPileRemove "$abs"
   cmdList
 }
 
@@ -115,7 +115,7 @@ cmdResolve() { # cmdResolve <spec> <repo> <branch> — where would this fetch fr
   ensureTool jq || exit 127
   tissTreeResolve "$1" "$2" "$3" || exit 2
   local enabled=false ref
-  [ "$TREE_INSTALLED" = 1 ] && tissTreeStack | grep -qx "$TREE_DIR" && enabled=true
+  [ "$TREE_INSTALLED" = 1 ] && tissPile | grep -qx "$TREE_DIR" && enabled=true
   ref="$(tissTreeRefCandidates | head -1)"
   jq -cn \
     --arg name "$TREE_NAME" \
@@ -175,21 +175,21 @@ case "$sub" in
     ;;
   add | install)
     [ -n "$spec" ] || {
-      logError "usage: $TISS_NAME self tree add PATH | SPEC [--repo URL] [--branch BR]"
+      logError "usage: $TISS_NAME pile add PATH | SPEC [--repo URL] [--branch BR]"
       exit 2
     }
     cmdAdd "$spec" "$repo" "$branch"
     ;;
   remove | rm)
     [ -n "$spec" ] || {
-      logError "usage: $TISS_NAME self tree remove PATH|NAME"
+      logError "usage: $TISS_NAME pile remove PATH|NAME"
       exit 2
     }
     cmdRemove "$spec"
     ;;
   resolve)
     [ -n "$spec" ] || {
-      logError "usage: $TISS_NAME self tree resolve SPEC [--repo URL] [--branch BR]"
+      logError "usage: $TISS_NAME pile resolve SPEC [--repo URL] [--branch BR]"
       exit 2
     }
     cmdResolve "$spec" "$repo" "$branch"

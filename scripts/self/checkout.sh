@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # @description Switch the tiss checkout to a branch (try a shared feature)
-# @usage tiss self checkout [branch]
-# @example tiss self checkout feature/new-wrapper
-# @example tiss self checkout            # list available branches
-# @example tiss self checkout main       # back to normal
+# @usage tiss checkout [branch]
+# @example tiss checkout feature/new-wrapper
+# @example tiss checkout            # list available branches
+# @example tiss checkout main       # back to normal
 # @needs git
 #
 set -euo pipefail
@@ -28,9 +28,9 @@ if [ $# -eq 0 ]; then
   logInfo "currently on: ${current:-<detached>}"
   echo "branches:" >&2
   git -C "$TISS_HOME" branch -a --format='  %(refname:short)' | sed 's|origin/||' | sort -u | grep -v '^  HEAD' >&2
-  logInfo "switch with: $TISS_NAME self checkout <branch>"
+  logInfo "switch with: $TISS_NAME checkout <branch>"
   exit 0
 fi
 
 learnExec git -C "$TISS_HOME" checkout "$1"
-logInfo "tiss is now on '$1' — back with: $TISS_NAME self checkout main"
+logInfo "tiss is now on '$1' — back with: $TISS_NAME checkout main"

@@ -52,7 +52,7 @@ tissMiseBootstrap() { # official installer -> ~/.local/bin, activated in-process
     logError "bootstrap ran but mise is not at ~/.local/bin/mise — check the installer output above"
     return 127
   }
-  logInfo "mise is ready — your shells activate it via:  eval \"\$(${TISS_NAME:-tiss} self init)\""
+  logInfo "mise is ready — your shells activate it via:  eval \"\$(${TISS_NAME:-tiss} init)\""
 }
 
 tissBrewActivate() { # 0 if brew is usable; finds it even if shellenv never ran
@@ -61,7 +61,7 @@ tissBrewActivate() { # 0 if brew is usable; finds it even if shellenv never ran
   for b in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
     if [ -x "$b" ]; then
       eval "$("$b" shellenv)"
-      logInfo "brew found at $b but not on your shell's PATH — the rc line 'eval \"\$(${TISS_NAME:-tiss} self init)\"' fixes that"
+      logInfo "brew found at $b but not on your shell's PATH — the rc line 'eval \"\$(${TISS_NAME:-tiss} init)\"' fixes that"
       return 0
     fi
   done
@@ -198,7 +198,7 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
   if ! command -v "$tool" >/dev/null 2>&1; then
     # Installed but invisible: the shell hasn't activated mise. Make the
     # CURRENT invocation work through mise's shims; future shells get the
-    # real activation from the rc line (tiss self init).
+    # real activation from the rc line (tiss init).
     local mise_shims="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
     if [ -d "$mise_shims" ]; then
       case ":$PATH:" in
@@ -208,7 +208,7 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
     fi
   fi
   if ! command -v "$tool" >/dev/null 2>&1; then
-    logError "Installed $pkg, but '$tool' is still not on PATH — activate mise in your shell:  eval \"\$(${TISS_NAME:-tiss} self init)\""
+    logError "Installed $pkg, but '$tool' is still not on PATH — activate mise in your shell:  eval \"\$(${TISS_NAME:-tiss} init)\""
     return 127
   fi
   logInfo "$tool is ready."

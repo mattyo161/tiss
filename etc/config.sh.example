@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 #
 # tiss user configuration — lives at ~/.config/tiss/config.sh
-# (create/open it with: tiss self config edit)
+# (create/open it with: tiss config edit)
 #
 # HOW THIS WORKS
 #   Every setting uses `cfg NAME value`, which assigns only when NAME is
@@ -15,7 +15,7 @@
 #   TISS_CONFIG   config directory itself        (default ~/.config/tiss)
 #   TISS_HOME     the tiss install root          (auto-detected)
 #
-# `tiss self config` lists every setting with its current effective value.
+# `tiss config` lists every setting with its current effective value.
 
 ## --- general -----------------------------------------------------------------
 
@@ -27,7 +27,7 @@
 
 ## Active environment profile (dev/stage/prod...). Usually set per
 ## invocation (`tiss @prod ...`) or per shell, not persistently here —
-## see: tiss self env
+## see: tiss env
 # cfg TISS_ENV ""
 
 ## Extra tools (space-separated) that passthrough may auto-install, on
@@ -39,7 +39,7 @@
 ## --- paths -------------------------------------------------------------------
 
 ## Overlay tree stack, colon-separated, most specific first.
-## Prefer managing this with: tiss self tree add <dir>
+## Prefer managing this with: tiss pile add <dir>
 # cfg TISS_PATH ""
 
 ## Where saveData/readData/cacheExec keep their files
@@ -48,8 +48,8 @@
 ## Where tiss keeps state (rmAfter schedules, history log)
 # cfg TISS_STATE "$HOME/.local/state/tiss"
 
-## Where shortcut shims live — symlinks created by 'tiss self shortcuts',
-## put on PATH by the rc line from 'tiss self init'
+## Where shortcut shims live — symlinks created by 'tiss shortcuts',
+## put on PATH by the rc line from 'tiss init'
 # cfg TISS_SHIMS "$HOME/.local/share/tiss/shims"
 
 ## Where installed tree packages (tiss +name) are cloned

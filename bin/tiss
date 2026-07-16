@@ -8,7 +8,7 @@
 #                              through to plain `git` (installing it first
 #                              if it is missing).
 #
-# Overlay trees (TISS_PATH, managed by `tiss self tree`) layer private or
+# Overlay trees (TISS_PATH, managed by `tiss pile`) layer private or
 # company script trees over the core: most-specific first, first match wins,
 # core always last. Help, completions and --manifest merge all trees.
 #
@@ -45,7 +45,7 @@ TISS_STATE="${TISS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/tiss}"
 export TISS_DATA TISS_STATE
 export TISS_PATH="${TISS_PATH:-}" # resolved by config; scripts inherit it
 
-# Shortcut shims (`tiss self shortcuts`): names in $TISS_SHIMS symlink
+# Shortcut shims (`tiss shortcuts`): names in $TISS_SHIMS symlink
 # back to this dispatcher and route via argv[0] in main. The shim dir is
 # stripped from PATH here so child scripts and passthrough tools only
 # ever see real commands — recursion through a shim is structurally
@@ -144,7 +144,27 @@ showHelp() { # showHelp [namespace words...] — merged across all trees
   local ns="$*"
   echo "usage: $TISS_NAME ${ns:+$ns }<command> [args...]"
   echo
-  echo "commands:"
+  if [ -z "$ns" ]; then
+    # The lexicon leads: reserved words are the tiss contract, resolved
+    # only from the core — a tree can never shadow them.
+    echo "tiss lexicon (reserved — always tiss; \`$TISS_NAME -- <cmd>\` runs the real tool):"
+    local w lf desc
+    for w in $TISS_LEXICON; do
+      case "$w" in
+        help) desc="this help, or any command's: $TISS_NAME help tf plan" ;;
+        version) desc="print the tiss version" ;;
+        *)
+          desc=""
+          lf="$(findScript "$TISS_SCRIPTS/self" "$w")" && desc="$(meta "$lf" description)"
+          ;;
+      esac
+      printf '  %-22s %s\n' "$w" "$desc"
+    done
+    echo
+    echo "== Commands ===================================================="
+  else
+    echo "commands:"
+  fi
   local tree root node f rel tag seen="
 "
   while IFS= read -r tree; do
@@ -157,6 +177,8 @@ showHelp() { # showHelp [namespace words...] — merged across all trees
       rel="${rel%.*}"
       rel="${rel//\// }"
       case "$rel" in _self | *" _self") continue ;; esac # handlers get the footer
+      # the lexicon owns the self/ dir at the root: shown above, not here
+      [ -z "$ns" ] && case "$rel" in self | "self "*) continue ;; esac
       case "$seen" in *"
 $rel
 "*) continue ;; esac # shadowed by a more specific tree
@@ -206,6 +228,17 @@ manifest() {
       cmd="$(cmdOf "$root" "$f")"
       type="scripted"
       case "$cmd" in
+        self | "self "*)
+          # Lexicon commands surface under their reserved names; a tree's
+          # self/ files are dead to routing and don't belong in the manifest.
+          [ "$tree" = "$TISS_HOME" ] || continue
+          cmd="${cmd#self}"
+          cmd="${cmd# }"
+          [ -n "$cmd" ] || continue
+          type="reserved"
+          ;;
+      esac
+      case "$cmd" in
         _self)
           cmd="*"
           type="handler"
@@ -242,7 +275,7 @@ $cmd
 }
 
 # --- shell completion ---------------------------------------------------------
-# Called by the completion functions emitted by `tiss self completion`:
+# Called by the completion functions emitted by `tiss completion`:
 #   tiss --complete <completed words...>       plain candidates (bash)
 #   tiss --complete-zsh <completed words...>   name:description pairs (zsh)
 # Union of every tree's candidates at the walked node.
@@ -250,6 +283,18 @@ shellComplete() {
   local mode="$1" tree node w entry name seen="
 " skip
   shift
+  # Root-level completion offers the lexicon too (self stays hidden).
+  if [ -z "$*" ]; then
+    for name in $TISS_LEXICON; do
+      seen="$seen$name
+"
+      if [ "$mode" = "zsh" ]; then
+        printf '%s:%s\n' "$name" "(tiss)"
+      else
+        printf '%s\n' "$name"
+      fi
+    done
+  fi
   while IFS= read -r tree; do
     node="$tree/scripts"
     skip=0
@@ -269,6 +314,8 @@ shellComplete() {
       [ -e "$entry" ] || continue
       name="$(basename "$entry")"
       case "$name" in _*) continue ;; esac # handlers/private files
+      # self/ belongs to the lexicon; never offer it as a namespace
+      [ -z "$*" ] && [ "$name" = "self" ] && [ -d "$entry" ] && continue
       if [ -d "$entry" ]; then
         :
       elif [ -f "$entry" ] && [ -x "$entry" ]; then
@@ -393,17 +440,17 @@ main() {
         envName="${1#@}"
         shift
         tissLoadEnv "$envName" || exit 2
-        [ $# -gt 0 ] || set -- self shell
+        [ $# -gt 0 ] || set -- shell
         break
         ;;
       +?*)
         treeDir="$(tissTreeInstall "${1#+}")" || exit 2
-        tissTreeEnable "$treeDir"
+        tissPileAdd "$treeDir"
         shift
         ;;
       -?*)
         if treeDir="$(tissTreeByName "${1#-}")"; then
-          tissTreeDisable "$treeDir"
+          tissPileRemove "$treeDir"
           shift
         else
           break
@@ -412,6 +459,17 @@ main() {
       *) break ;;
     esac
   done
+
+  # `--` escapes the lexicon: everything after it runs as the real tool,
+  # untouched by tiss routing (`tiss -- env` runs /usr/bin/env).
+  if [ "${1:-}" = "--" ]; then
+    shift
+    if [ $# -eq 0 ]; then
+      showHelp
+      exit 0
+    fi
+    passthrough "$@"
+  fi
 
   case "${1:-}" in
     "" | -h | --help)
@@ -446,7 +504,7 @@ main() {
       manifest
       exit 0
       ;;
-    --version | -V)
+    --version | -V | version)
       echo "$TISS_NAME $(cat "$TISS_HOME/version.txt" 2>/dev/null || echo dev) ($TISS_HOME)"
       exit 0
       ;;
@@ -461,6 +519,28 @@ main() {
       exit 0
       ;;
   esac
+
+  # The reserved lexicon resolves ONLY from the core, BEFORE the pile
+  # walk — no tree can shadow the tiss contract. (`help` and `version`
+  # were already handled above.)
+  local word rscript rdep
+  if tissReserved "${1:-}"; then
+    word="$1"
+    shift
+    rscript="$(findScript "$TISS_SCRIPTS/self" "$word")" || {
+      logError "reserved word '$word' has no core implementation — reinstall tiss?"
+      exit 70
+    }
+    case "${1:-}" in
+      -h | --help) ;;
+      *)
+        for rdep in $(meta "$rscript" needs); do
+          ensureTool "$rdep" || exit 127
+        done
+        ;;
+    esac
+    exec "$rscript" "$@"
+  fi
 
   # First tree with a script match wins (overlay beats core).
   # NOTE: the tree list is read on fd 3, NOT stdin — a `while read` loop

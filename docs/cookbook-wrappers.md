@@ -112,10 +112,10 @@ your tree:
 mkdir -p ~/work/acme/scripts/ssm
 $EDITOR ~/work/acme/scripts/ssm/get.sh   # e.g. force --path prefix /acme
 chmod +x ~/work/acme/scripts/ssm/get.sh  # ← do not forget this
-tiss self tree add ~/work/acme
+tiss pile add ~/work/acme
 ```
 
-Your version now shadows the core's (`tiss self tree list` shows it),
+Your version now shadows the core's (`tiss pile list` shows it),
 and `etc/config.sh` in your tree can carry the account IDs and region
 defaults it needs — overridable by environment variables, always.
 

@@ -11,13 +11,13 @@ run?"
 Commands are looked up across a stack of *trees*, most specific first:
 
 ```
-1. overlay trees, in TISS_PATH order    (tiss self tree list)
+1. overlay trees, in TISS_PATH order    (tiss pile list)
 2. the core                             ($TISS_HOME, always last)
 ```
 
 A tree is any directory containing `scripts/`. Register one with
-`tiss self tree add <dir>`; inspect the stack and shadowing with
-`tiss self tree list`.
+`tiss pile add <dir>`; inspect the stack and shadowing with
+`tiss pile list`.
 
 ## The walk
 
@@ -69,7 +69,7 @@ If a script matched, its `# @needs` tools are installed first (never for
   namespace's commands (with the handler described in the footer);
   `tiss ssm anything` reaches the handler.
 - **First tree wins.** An overlay's `git/clone.sh` shadows the core's.
-  `tiss self tree list` shows shadow counts; `--manifest` tags every
+  `tiss pile list` shows shadow counts; `--manifest` tags every
   command with its source tree.
 - **Flags never route.** The walk stops at the first `-something`; that
   arg and everything after belong to whatever matched so far.
@@ -80,7 +80,7 @@ If a script matched, its `# @needs` tools are installed first (never for
 
 1. **Is it executable?** `chmod +x scripts/ssm/get.sh` — the #1 cause.
    (`tiss ssm get` will now tell you this itself.)
-2. **Is it in a registered tree?** `tiss self tree list` — a script tree
+2. **Is it in a registered tree?** `tiss pile list` — a script tree
    sitting outside `TISS_PATH` and the core is invisible.
 3. **Is it shadowed?** A same-named file in a more specific tree, or a
    sibling file shadowing your directory (`ssm.sh` vs `ssm/`).

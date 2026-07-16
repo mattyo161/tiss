@@ -1,10 +1,10 @@
 # tiss shortcuts — muscle-memory names for tiss commands
-# Lives at ~/.config/tiss/shortcuts (create/open it with: tiss self shortcuts edit)
+# Lives at ~/.config/tiss/shortcuts (create/open it with: tiss shortcuts edit)
 #
 # One `name = command words` per line: the name becomes a real command
 # (a shim on your PATH) that runs `tiss <command words>`. Uncomment a
-# line to activate it, then run `tiss self shortcuts sync` (edit runs
-# sync for you). Day to day, prefer:  tiss self shortcuts add NAME COMMAND...
+# line to activate it, then run `tiss shortcuts sync` (edit runs
+# sync for you). Day to day, prefer:  tiss shortcuts add NAME COMMAND...
 #
 # A suggested starter set:
 # sd = saveData

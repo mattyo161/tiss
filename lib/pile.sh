@@ -5,7 +5,7 @@
 # A package is an overlay tree (scripts/ + optional etc/, lib/, tests/)
 # hosted in git. The mapping name -> (repo, tracked branch) lives IN THE
 # CLONE — git origin plus a `tiss.track` git-config entry — so there is
-# no registry file to drift out of sync; `tiss self tree resolve <name>`
+# no registry file to drift out of sync; `tiss pile resolve <name>`
 # shows exactly where a name fetches from. Uninstalled short names fall
 # back to the convention: branch tree/<name> on the distribution repo
 # (TISS_TREES_REPO, default: the repo tiss itself was cloned from).
@@ -19,11 +19,11 @@
 #
 #   tiss +devops [cmd...]     install if missing, enable, route on
 #   tiss -devops [cmd...]     disable (clone kept on disk), route on
-#   tiss self tree add prod --repo URL --branch env/prod   custom mapping
+#   tiss pile add prod --repo URL --branch env/prod   custom mapping
 #
 # Clones land in $TISS_TREES (~/.local/share/tiss/trees/<name>); enabled
 # means present in the TISS_PATH stack, persisted through the managed
-# config line `tiss self tree` writes.
+# config line `tiss pile` writes.
 
 tissTreesDir() { # where package clones live (setting: TISS_TREES)
   printf '%s\n' "${TISS_TREES:-${XDG_DATA_HOME:-$HOME/.local/share}/tiss/trees}"
@@ -182,7 +182,7 @@ tissTreeInstall() { # tissTreeInstall <spec> [repo] [branch] -> print clone dir
         }
       else
         logError "could not clone '$TREE_NAME' from $TREE_URL (tried:$(tissTreeRefCandidates | tr '\n' ' ' | sed 's/ $//; s/^/ /'))"
-        logError "packages live on branches named tree/<name> — scaffold one: ${TISS_NAME:-tiss} self tree new $TREE_NAME"
+        logError "packages live on branches named tree/<name> — scaffold one: ${TISS_NAME:-tiss} pile new $TREE_NAME"
         return 2
       fi
     fi
@@ -224,23 +224,23 @@ tissTreeInfoJson() { # tissTreeInfoJson <dir> <enabled-json-bool> -> one jsonl r
 }
 
 # --- the registered stack (persisted TISS_PATH) --------------------------------
-TISS_TREE_MARKER="# tiss:tree-path (managed by 'tiss self tree')"
+TISS_PILE_MARKER="# tiss:tree-path (managed by 'tiss pile')"
 
-tissTreeStack() { # registered overlay roots, one per line (core excluded)
+tissPile() { # registered overlay roots, one per line (core excluded)
   tissTrees | while IFS= read -r t; do
     [ "$t" = "$TISS_HOME" ] || printf '%s\n' "$t"
   done
 }
 
-tissTreeStackWrite() { # tissTreeStackWrite <colon-joined> — persist + in-process
+tissPileWrite() { # tissPileWrite <colon-joined> — persist + in-process
   local configFile="$TISS_CONFIG/config.sh" tmp
   mkdir -p "$TISS_CONFIG"
   tmp="$(mktemp)"
   if [ -f "$configFile" ]; then
-    grep -v -e "^cfg TISS_PATH " -e "^$TISS_TREE_MARKER\$" "$configFile" >"$tmp" || true
+    grep -v -e "^cfg TISS_PATH " -e "^$TISS_PILE_MARKER\$" "$configFile" >"$tmp" || true
   fi
   if [ -n "$1" ]; then
-    printf '%s\ncfg TISS_PATH "%s"\n' "$TISS_TREE_MARKER" "$1" >>"$tmp"
+    printf '%s\ncfg TISS_PATH "%s"\n' "$TISS_PILE_MARKER" "$1" >>"$tmp"
   fi
   mv "$tmp" "$configFile"
   TISS_PATH="$1" # this invocation routes with the new stack immediately
@@ -254,7 +254,7 @@ tissTreeByName() { # tissTreeByName <name> -> dir of a registered OR installed t
       printf '%s\n' "$t"
       return 0
     fi
-  done < <(tissTreeStack)
+  done < <(tissPile)
   t="$(tissTreesDir)/$1"
   if [ -d "$t/scripts" ]; then
     printf '%s\n' "$t"
@@ -263,7 +263,7 @@ tissTreeByName() { # tissTreeByName <name> -> dir of a registered OR installed t
   return 1
 }
 
-tissTreeEnable() { # tissTreeEnable <dir> — put at the front of the stack
+tissPileAdd() { # tissPileAdd <dir> — put at the front of the stack
   local dir="$1" trees="" t
   while IFS= read -r t; do
     [ "$t" = "$dir" ] && {
@@ -271,12 +271,12 @@ tissTreeEnable() { # tissTreeEnable <dir> — put at the front of the stack
       return 0
     }
     trees="$trees:$t"
-  done < <(tissTreeStack)
-  tissTreeStackWrite "$dir${trees}"
+  done < <(tissPile)
+  tissPileWrite "$dir${trees}"
   logInfo "tree enabled: $(basename "$dir") ($dir)"
 }
 
-tissTreeDisable() { # tissTreeDisable <dir> — drop from the stack, keep the clone
+tissPileRemove() { # tissPileRemove <dir> — drop from the stack, keep the clone
   local dir="$1" trees="" t found=0
   while IFS= read -r t; do
     if [ "$t" = "$dir" ]; then
@@ -284,11 +284,11 @@ tissTreeDisable() { # tissTreeDisable <dir> — drop from the stack, keep the cl
       continue
     fi
     trees="$trees${trees:+:}$t"
-  done < <(tissTreeStack)
+  done < <(tissPile)
   if [ "$found" = 0 ]; then
     logWarn "not registered: $dir"
     return 0
   fi
-  tissTreeStackWrite "$trees"
+  tissPileWrite "$trees"
   logInfo "tree disabled: $(basename "$dir") (clone kept at $dir)"
 }

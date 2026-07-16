@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # @description Muscle-memory shortcuts — bare names that run tiss commands
-# @usage tiss self shortcuts [list|add NAME COMMAND...|remove NAME|sync|edit|path]
-# @example tiss self shortcuts add tfplan tf plan
-# @example tiss self shortcuts add saveData saveData
-# @example tiss self shortcuts edit
+# @usage tiss shortcuts [list|add NAME COMMAND...|remove NAME|sync|edit|path]
+# @example tiss shortcuts add tfplan tf plan
+# @example tiss shortcuts add saveData saveData
+# @example tiss shortcuts edit
 #
 # A shortcut makes a tiss command feel native: `tfplan` instead of
 # `tiss tf plan` — a real executable on your PATH, so it works in
@@ -16,7 +16,7 @@
 # Definitions live in ~/.config/tiss/shortcuts (yours) and each overlay
 # tree's etc/shortcuts — `name = command words`, one per line; yours
 # win, then trees most-specific first. Put the shim dir on PATH with
-# the rc line from:  eval "$(tiss self init)"
+# the rc line from:  eval "$(tiss init)"
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"
@@ -62,12 +62,12 @@ shimStatus() { # shimStatus <name> -> ok | missing | stale | blocked
 
 pathHint() { # nudge when the shim dir isn't on PATH (dispatcher checked)
   [ "${TISS_SHIMS_ON_PATH:-0}" = 1 ] && return 0
-  logWarn "shim dir is not on your PATH — add to your rc file:  eval \"\$($TISS_NAME self init)\""
+  logWarn "shim dir is not on your PATH — add to your rc file:  eval \"\$($TISS_NAME init)\""
 }
 
 cmdList() {
   if ! tissShortcutList | grep -q .; then
-    logInfo "no shortcuts yet — try:  $TISS_NAME self shortcuts add tfplan tf plan"
+    logInfo "no shortcuts yet — try:  $TISS_NAME shortcuts add tfplan tf plan"
     return 0
   fi
   printf '%-18s %-34s %-8s %s\n' "NAME" "RUNS" "SHIM" "SOURCE"
@@ -135,6 +135,10 @@ cmdAdd() {
       exit 2
       ;;
   esac
+  if tissReserved "$name"; then
+    logError "'$name' is part of the reserved tiss lexicon — shortcuts can't take it"
+    exit 2
+  fi
   local real
   # PATH executables only (type -P): the sourced tiss helpers live as
   # functions in THIS shell and would self-trigger via command -v.
@@ -172,7 +176,7 @@ cmdRemove() {
   # Not yours to delete? Point at the owner instead of failing blind.
   while IFS=$'\t' read -r n exp file; do
     if [ "$n" = "$name" ]; then
-      logError "'$name' is defined by $(sourceTag "$file") ($file) — edit that file, or shadow it: $TISS_NAME self shortcuts add $name ..."
+      logError "'$name' is defined by $(sourceTag "$file") ($file) — edit that file, or shadow it: $TISS_NAME shortcuts add $name ..."
       exit 2
     fi
   done < <(tissShortcutList)
@@ -201,7 +205,7 @@ case "${1:-list}" in
     ;;
   add)
     [ $# -ge 3 ] || {
-      logError "usage: $TISS_NAME self shortcuts add NAME COMMAND..."
+      logError "usage: $TISS_NAME shortcuts add NAME COMMAND..."
       exit 2
     }
     shift
@@ -209,7 +213,7 @@ case "${1:-list}" in
     ;;
   remove | rm)
     [ -n "${2:-}" ] || {
-      logError "usage: $TISS_NAME self shortcuts remove NAME"
+      logError "usage: $TISS_NAME shortcuts remove NAME"
       exit 2
     }
     cmdRemove "$2"

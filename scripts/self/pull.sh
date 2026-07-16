@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # @description Update tiss to the latest from git
-# @usage tiss self pull
-# @example tiss self pull
+# @usage tiss pull
+# @example tiss pull
 # @needs git
 #
 set -euo pipefail

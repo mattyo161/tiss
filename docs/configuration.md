@@ -1,14 +1,14 @@
 # Configuration reference
 
 Every knob in tiss, in one place. The quickest tour is on your own
-machine: `tiss self config` lists each setting with its current
+machine: `tiss config` lists each setting with its current
 effective value.
 
 ## Precedence (highest wins)
 
 ```
 1. environment variables        set before anything is sourced
-2. ~/.config/tiss/config.sh    your file (tiss self config edit)
+2. ~/.config/tiss/config.sh    your file (tiss config edit)
 3. overlay tree etc/config.sh  most-specific tree first
 4. core defaults
 ```
@@ -31,10 +31,10 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_LOG_LEVEL` | `INFO` | stderr verbosity: `ERROR` \| `WARN` \| `INFO` \| `DEBUG` |
 | `TISS_ENV` | empty | Active environment profile. Set per-invocation with the `@` prefix (`tiss @prod ssm get ...`) or per-shell; participates in every cacheExec key, so environments never share cache entries |
 | `TISS_INSTALL_ALLOW` | empty | Extra tools passthrough may auto-install, beyond the curated built-in set (age, git, jq, rg, terraform, ...). `@needs`-declared tools are always allowed — this gates only commands you type |
-| `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss self tree add` (persists it here for you) |
+| `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss pile add` (persists it here for you) |
 | `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
 | `TISS_STATE` | `~/.local/state/tiss` | State: `rmAfter` schedules, the `learnExec` history log |
-| `TISS_SHIMS` | `~/.local/share/tiss/shims` | Shortcut shim dir ([shortcuts](shortcuts.md)): each shortcut name is a symlink here back to the dispatcher. `tiss self init` puts it first on PATH; the dispatcher strips it from child PATHs |
+| `TISS_SHIMS` | `~/.local/share/tiss/shims` | Shortcut shim dir ([shortcuts](shortcuts.md)): each shortcut name is a symlink here back to the dispatcher. `tiss init` puts it first on PATH; the dispatcher strips it from child PATHs |
 | `TISS_TREES` | `~/.local/share/tiss/trees` | Where tree packages (`tiss +name`) are cloned. `-name` disables without deleting the clone |
 | `TISS_TREES_REPO` | tiss's own origin | Distribution repo for short tree-package names — packages live on branches named `tree/<name>`, versions are tags `tree/<name>@<ver>`, `@latest` = branch head (forces a fetch) |
 | `TISS_CACHE_ENV` | empty | Extra env var names (space-separated) added to `cacheExec` keys, on top of the built-ins (`AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `GOOGLE_CLOUD_PROJECT`, `CLOUDSDK_ACTIVE_CONFIG_NAME`, `KUBECONFIG`) |
@@ -63,15 +63,15 @@ are derived):
 ## Your config file
 
 `~/.config/tiss/config.sh` is seeded from a fully commented template on
-install (or on first `tiss self config`): every setting documented with
+install (or on first `tiss config`): every setting documented with
 its default, commented out. Uncomment to override:
 
 ```sh
-tiss self config          # list settings + effective values
-tiss self config edit     # open in $EDITOR (creates if missing)
+tiss config          # list settings + effective values
+tiss config edit     # open in $EDITOR (creates if missing)
 ```
 
-`tiss self tree add` also writes to this file (a managed `cfg TISS_PATH`
+`tiss pile add` also writes to this file (a managed `cfg TISS_PATH`
 line); your own lines are preserved.
 
 ## Environments
@@ -80,10 +80,10 @@ An environment profile is a plain shell file of exports — AWS profile,
 region, kube context, whatever defines "prod" for you:
 
 ```sh
-tiss self env edit prod     # creates ~/.config/tiss/env/prod.sh, opens it
+tiss env edit prod     # creates ~/.config/tiss/env/prod.sh, opens it
 tiss @prod ssm get --path /prod/app     # one command in that environment
 tiss @prod                              # dev shell inside it (prompt shows the env)
-tiss self env list|show NAME            # what exists, what loads
+tiss env list|show NAME            # what exists, what loads
 ```
 
 Profiles layer like everything else: a tree's `etc/env/prod.sh` (team

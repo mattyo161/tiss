@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # @description Drop into an interactive tiss shell: helpers loaded, cwd = tiss home
-# @usage tiss self shell
-# @example tiss self shell
-# @example printf 'dur2s 1w1d\nexit\n' | tiss self shell   # scriptable too
+# @usage tiss shell
+# @example tiss shell
+# @example printf 'dur2s 1w1d\nexit\n' | tiss shell   # scriptable too
 #
 # A REPL for tiss development: every helper (logInfo, saveData, cacheExec,
 # dur2s, bkup, ...) is a first-class command at the prompt, overlay libs

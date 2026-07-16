@@ -77,17 +77,17 @@ assertMatch "completion includes core cmd" '(^|\n)encrypt(\n|$)' "$comp"
 
 # tree management: add/list/remove persist to user config.
 unset TISS_PATH
-"$TISS_BIN" self tree add "$tree" >/dev/null 2>&1
+"$TISS_BIN" pile add "$tree" >/dev/null 2>&1
 assertMatch "tree add persists to config" 'cfg TISS_PATH' "$(cat "$TISS_CONFIG/config.sh")"
 assertEq "persisted tree resolves commands" "acme lock wins" "$("$TISS_BIN" lock)"
-list_out="$("$TISS_BIN" self tree list 2>/dev/null)"
+list_out="$("$TISS_BIN" pile list 2>/dev/null)"
 assertMatch "tree list shows overlay" 'acme' "$list_out"
 assertMatch "tree list shows shadow count" 'shadowed by a higher tree' "$list_out"
-"$TISS_BIN" self tree remove "$tree" >/dev/null 2>&1
+"$TISS_BIN" pile remove "$tree" >/dev/null 2>&1
 assertMatch "tree remove restores core" 'Forget the unlocked' "$("$TISS_BIN" lock --help)"
 
 # Guards.
-assertExit "add rejects non-tree dir" 2 "$TISS_BIN" self tree add "$TISS_TEST_TMP"
-assertExit "remove rejects unknown" 2 "$TISS_BIN" self tree remove /nope
+assertExit "add rejects non-tree dir" 2 "$TISS_BIN" pile add "$TISS_TEST_TMP"
+assertExit "remove rejects unknown" 2 "$TISS_BIN" pile remove /nope
 
 finish

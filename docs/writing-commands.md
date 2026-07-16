@@ -93,4 +93,4 @@ Rules the pattern encodes:
 Add a `tests/test_<name>.sh` (copy an existing one — the harness gives
 you isolated state and assert helpers). Wrap external tools with a shim
 script on PATH so the test proves *your* plumbing, not AWS's uptime.
-Run `tiss self test` before pushing; CI runs it on ubuntu + macos.
+Run `tiss test` before pushing; CI runs it on ubuntu + macos.

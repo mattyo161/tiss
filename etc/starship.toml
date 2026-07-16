@@ -1,4 +1,4 @@
-# tiss dev shell prompt — `tiss self shell` points STARSHIP_CONFIG here
+# tiss dev shell prompt — `tiss shell` points STARSHIP_CONFIG here
 # when starship is installed (plain PS1 otherwise).
 add_newline = false
 format = """[tiss](bold cyan)${env_var.TISS_ENV} $directory$git_branch$git_status$character"""

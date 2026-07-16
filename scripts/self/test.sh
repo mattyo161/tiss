@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # @description Run the tiss test suite (development checkouts)
-# @usage tiss self test
-# @example tiss self test
+# @usage tiss test
+# @example tiss test
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # @description Show, create, or edit your tiss configuration
-# @usage tiss self config [list|path|edit]
-# @example tiss self config           # every setting + its effective value
-# @example tiss self config edit      # open it in $EDITOR (creates from template)
+# @usage tiss config [list|path|edit]
+# @example tiss config           # every setting + its effective value
+# @example tiss config edit      # open it in $EDITOR (creates from template)
 #
 # Your config lives at $TISS_CONFIG/config.sh, seeded from the fully
 # commented template (etc/config.sh.example) — uncomment a line to make
@@ -47,7 +47,7 @@ case "${1:-list}" in
       printf '%-26s %-22s %s\n' "$name" "${value:-(default)}" "$default"
     done < <(grep '^# cfg ' "$template")
     echo
-    echo "config file: $target$([ -f "$target" ] || echo '  (not created yet — tiss self config edit)')"
+    echo "config file: $target$([ -f "$target" ] || echo '  (not created yet — tiss config edit)')"
     ;;
   *)
     logError "unknown subcommand '${1}' (list, path, edit)"

@@ -47,7 +47,7 @@ sed -i.bak '$d' "$TISS_CONFIG/config.sh" && rm -f "$TISS_CONFIG/config.sh.bak"
 # the template (or be a known env-only/derived/internal name). Adding a
 # new setting without documenting it fails this test — on purpose.
 documented="$(grep '^# cfg ' "$template" | awk '{print $3}' | sort -u)"
-env_only="TISS_HOME TISS_NAME TISS_CONFIG TISS_SCRIPTS TISS_LIB TISS_BIN_DIR TISS_CACHE_ENV_DEFAULT TISS_INSTALL_ALLOW_DEFAULT TISS_SHIMS_ON_PATH TISS_TREE_MARKER"
+env_only="TISS_HOME TISS_NAME TISS_CONFIG TISS_SCRIPTS TISS_LIB TISS_BIN_DIR TISS_CACHE_ENV_DEFAULT TISS_INSTALL_ALLOW_DEFAULT TISS_SHIMS_ON_PATH TISS_PILE_MARKER TISS_LEXICON"
 referenced="$(grep -ohrE 'TISS_[A-Z_]+' "$TISS_TEST_ROOT/bin" "$TISS_TEST_ROOT/lib" "$TISS_TEST_ROOT/scripts" | sort -u)"
 missing=""
 for var in $referenced; do

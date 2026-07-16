@@ -58,13 +58,13 @@ fi
 if [ ! -f "$cfg_dir/shortcuts" ]; then
   mkdir -p "$cfg_dir"
   cp "$dest/etc/shortcuts.example" "$cfg_dir/shortcuts"
-  say "created $cfg_dir/shortcuts (muscle-memory names, commented — see: $name self shortcuts)"
+  say "created $cfg_dir/shortcuts (muscle-memory names, commented — see: $name shortcuts)"
 fi
 
 say "checking your setup..."
-"$bin_dir/$name" self doctor || true
+"$bin_dir/$name" doctor || true
 
 say "done. next steps:"
 say "  $name                          # explore the command tree"
-say "  eval \"\$($name self init)\"           # rc line: mise/brew activation, shortcut shims, self cd"
-say "  eval \"\$($name self completion zsh)\"   # tab completion (~/.zshrc, after compinit)"
+say "  eval \"\$($name init)\"           # rc line: mise/brew activation, shortcut shims"
+say "  eval \"\$($name completion zsh)\"   # tab completion (~/.zshrc, after compinit)"

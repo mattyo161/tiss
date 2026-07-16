@@ -7,7 +7,8 @@
 help_out="$("$TISS_BIN")"
 assertMatch "help shows usage" '^usage: tiss' "$help_out"
 assertMatch "help lists encrypt" 'encrypt' "$help_out"
-assertMatch "help lists namespaced command" 'self doctor' "$help_out"
+assertMatch "help leads with the reserved lexicon" 'tiss lexicon' "$help_out"
+assertMatch "lexicon lists doctor" '(^|\n)  doctor ' "$help_out"
 
 # argv[0] awareness via symlink.
 ln -s "$TISS_BIN" "$TISS_TEST_TMP/x"
@@ -48,7 +49,11 @@ assertMatch "TISS_INSTALL_ALLOW extends the gate" 'TISS_AUTO_INSTALL=never' "$al
 # Completion.
 top="$("$TISS_BIN" --complete "")"
 assertMatch "completion lists encrypt" '(^|\n)encrypt(\n|$)' "$top"
-assertMatch "completion lists self namespace" '(^|\n)self(\n|$)' "$top"
+assertMatch "completion offers the lexicon" '(^|\n)doctor(\n|$)' "$top"
+case "$top" in
+  *"self"*) _report FAIL "completion still offers self" ;;
+  *) _report ok "completion hides self" ;;
+esac
 sub="$("$TISS_BIN" --complete self)"
 assertMatch "completion descends namespaces" 'doctor' "$sub"
 assertEq "no completion inside script args" "" "$("$TISS_BIN" --complete encrypt --in)"

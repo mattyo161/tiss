@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # @description Manage environment profiles (dev/stage/prod...)
-# @usage tiss self env [list|show NAME|edit NAME]
-# @example tiss self env edit dev      # create/edit your dev profile
+# @usage tiss env [list|show NAME|edit NAME]
+# @example tiss env edit dev      # create/edit your dev profile
 # @example tiss @dev ssm get --path /develop
 # @example tiss @prod                  # dev shell inside the prod environment
 #
@@ -20,14 +20,14 @@ case "${1:-list}" in
   list)
     avail="$(tissListEnvs)"
     if [ -z "$avail" ]; then
-      logInfo "no environments yet — create one: $TISS_NAME self env edit dev"
+      logInfo "no environments yet — create one: $TISS_NAME env edit dev"
       exit 0
     fi
     echo "$avail"
     [ -n "${TISS_ENV:-}" ] && logInfo "active: $TISS_ENV"
     ;;
   show)
-    name="${2:?usage: $TISS_NAME self env show NAME}"
+    name="${2:?usage: $TISS_NAME env show NAME}"
     files="$(tissEnvFiles "$name")"
     if [ -z "$files" ]; then
       logError "no environment '$name'"
@@ -37,7 +37,7 @@ case "${1:-list}" in
     printf '%s\n' "$files" | sed 's/^/  /'
     ;;
   edit)
-    name="${2:?usage: $TISS_NAME self env edit NAME}"
+    name="${2:?usage: $TISS_NAME env edit NAME}"
     target="$TISS_CONFIG/env/$name.sh"
     if [ ! -f "$target" ]; then
       mkdir -p "$TISS_CONFIG/env"
