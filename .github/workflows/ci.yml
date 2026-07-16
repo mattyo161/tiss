@@ -9,7 +9,7 @@ jobs:
   commits:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: conventional commits check
@@ -37,15 +37,17 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: shellcheck
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y shellcheck
+          # Pinned release binary — ubuntu's apt shellcheck (0.9.0) kept
+          # disagreeing with dev machines on info-level checks.
+          SCVER=v0.11.0
+          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/${SCVER}/shellcheck-${SCVER}.linux.x86_64.tar.xz" | tar -xJ
           # every .sh at any depth (polyglot leaves lint their own way),
           # plus the two bare-name entry points
           find lib scripts tests -name '*.sh' -print0 \
-            | xargs -0 shellcheck bin/tiss install.sh
+            | xargs -0 "./shellcheck-${SCVER}/shellcheck" bin/tiss install.sh
 
   test:
     strategy:
@@ -54,7 +56,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: install miller
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
