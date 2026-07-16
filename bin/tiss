@@ -380,17 +380,38 @@ main() {
     esac
   fi
 
-  # @<name> prefix: load that environment profile, then continue routing.
-  # Bare `tiss @dev` drops into the dev shell inside the environment.
-  local envName
-  case "${1:-}" in
-    @?*)
-      envName="${1#@}"
-      shift
-      tissLoadEnv "$envName" || exit 2
-      [ $# -gt 0 ] || set -- self shell
-      ;;
-  esac
+  # Leading prefixes, consumed in order, freely combined:
+  #   @<name>   load that environment profile (bare `tiss @dev` = dev shell)
+  #   +<tree>   install the tree package if missing, enable it, route on
+  #   -<tree>   disable the tree (clone kept), route on
+  # A -<word> that doesn't name an installed/registered tree is NOT a
+  # tree op — it falls through to normal flag handling (-h stays help).
+  local envName treeDir
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      @?*)
+        envName="${1#@}"
+        shift
+        tissLoadEnv "$envName" || exit 2
+        [ $# -gt 0 ] || set -- self shell
+        break
+        ;;
+      +?*)
+        treeDir="$(tissTreeInstall "${1#+}")" || exit 2
+        tissTreeEnable "$treeDir"
+        shift
+        ;;
+      -?*)
+        if treeDir="$(tissTreeByName "${1#-}")"; then
+          tissTreeDisable "$treeDir"
+          shift
+        else
+          break
+        fi
+        ;;
+      *) break ;;
+    esac
+  done
 
   case "${1:-}" in
     "" | -h | --help)

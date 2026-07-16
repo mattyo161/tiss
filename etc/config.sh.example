@@ -52,6 +52,13 @@
 ## put on PATH by the rc line from 'tiss self init'
 # cfg TISS_SHIMS "$HOME/.local/share/tiss/shims"
 
+## Where installed tree packages (tiss +name) are cloned
+# cfg TISS_TREES "$HOME/.local/share/tiss/trees"
+
+## Distribution repo for short tree-package names (branch convention
+## tree/<name>). Default: the repo tiss itself was cloned from.
+# cfg TISS_TREES_REPO ""
+
 ## --- cacheExec ---------------------------------------------------------------
 
 ## Extra env var names (space-separated) that participate in cache keys,

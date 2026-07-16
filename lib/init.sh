@@ -30,6 +30,7 @@ TISS_CONFIG="${TISS_CONFIG:-$HOME/.config/tiss}"
 . "$TISS_LIB/bkup.sh"
 . "$TISS_LIB/tf.sh"
 . "$TISS_LIB/config.sh"
+. "$TISS_LIB/trees.sh"
 . "$TISS_LIB/shortcuts.sh"
 
 tissLoadConfigs
