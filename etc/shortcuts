@@ -1,3 +1,6 @@
 # Muscle-memory shortcuts this tree suggests — uncomment to activate,
 # then: tiss shortcuts sync
-# hello = hello
+# tf = tf
+# tfplan = tf plan
+# tfapply = tf apply
+# tfshow = tf show
