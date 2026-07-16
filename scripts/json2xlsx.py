@@ -18,6 +18,7 @@
 #
 import json
 import re
+import os
 import sys
 from datetime import datetime, timezone
 
@@ -80,12 +81,17 @@ def main():
                 headers.append(key)
 
     from openpyxl import Workbook
+    from openpyxl import load_workbook
     from openpyxl.styles import Font
     from openpyxl.utils import get_column_letter
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = sheet
+    if os.path.exists(out):
+        wb = load_workbook(filename=out)
+        ws = wb.create_sheet(sheet)
+    else:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = sheet
 
     ws.append(headers)
     for cell in ws[1]:
