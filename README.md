@@ -33,7 +33,9 @@ derive live from the tree and each script's `# @` annotations.
 | `dns flush` | flush the OS DNS cache — knows the macOS and Linux incantations |
 | `tmux go` `new` `ls` `attach` `kill` | tmux without remembering args; the guided menu narrates every real command |
 | `serve` `mkpass` `urlparse` `jwt` `checkport` | polyglot one-liner rescues (python/ruby/node/ts/go) |
-| `self doctor` `config` `tree` `pull` `cd` ... | the meta namespace: setup checks, configuration, overlay trees, updating |
+| `doctor` `config` `env` `pile` `shortcuts` ... | the reserved lexicon: setup checks, resolved config/env, the pile of overlay trees, muscle-memory shims — always tiss, never shadowed |
+| `tiss +devops tf plan` | tree packages: install a git-distributed overlay, enable it, run — one gesture; `-devops` disables |
+| `tiss piles` → ``did you mean `tiss pile`?`` | typos offer the closest command and run it on Y |
 
 Plus the sourced helper suite every script gets: `logInfo`/`pipeInfo`/`teeInfo`,
 `ts`/`utc`/`dur2s`, and friends. Durations are `1w2d3h4m5s` everywhere
@@ -45,7 +47,9 @@ Plus the sourced helper suite every script gets: `logInfo`/`pipeInfo`/`teeInfo`,
 - **[How routing works](docs/how-routing-works.md)** — the resolution hierarchy, precedence rules, and the "why didn't my script run" checklist
 - **[Writing commands](docs/writing-commands.md)** — annotations, the arg-parsing pattern, output discipline
 - **[Cookbook: wrapping tools](docs/cookbook-wrappers.md)** — build `tiss ssm get` and learn the wrapper patterns
-- **[Configuration reference](docs/configuration.md)** — every setting, the precedence rules, and `tiss self config`
+- **[Shortcuts](docs/shortcuts.md)** — muscle-memory names (`tfplan`, `sd`) as real commands via argv[0] shims
+- **[The pile & packages](docs/pile.md)** — overlay trees, `+name` installs, versioning, company forks
+- **[Configuration reference](docs/configuration.md)** — every setting, the precedence rules, and `tiss config`
 
 Help comes three ways, all equivalent: `tiss ssm get --help`, `tiss ssm get help`, `tiss help ssm get`.
 
@@ -71,21 +75,28 @@ curl -fsSL https://raw.githubusercontent.com/mattyo161/tiss/main/install.sh | ba
 ```
 
 (or clone + symlink `bin/tiss` yourself — the installer just automates
-that plus `tiss self doctor`.)
+that plus `tiss doctor`.)
+
+One rc line wires everything — mise/brew activation, shortcut shims on
+PATH (`tiss init` offers to add it for you on first install):
+
+```sh
+eval "$(tiss init)"                # ~/.zshrc or ~/.bashrc
+```
 
 Tab completion (candidates come live from the tree — new scripts complete
 immediately):
 
 ```sh
-eval "$(tiss self completion zsh)"    # ~/.zshrc, after compinit
-eval "$(tiss self completion bash)"   # ~/.bashrc
+eval "$(tiss completion zsh)"      # ~/.zshrc, after compinit
+eval "$(tiss completion bash)"     # ~/.bashrc
 ```
 
 Call it whatever you like — the CLI follows the name of its symlink/alias:
 
 ```sh
 ln -s "$PWD/tiss/bin/tiss" /usr/local/bin/x
-x tiss doctor       # help, completions, everything says `x`
+x doctor            # help, completions, everything says `x`
 ```
 
 Requirements: bash and `jq`. Wrapped tools (age, mlr, rg, ...) install
@@ -102,15 +113,16 @@ timestamp form — so an agent that learns one command has learned them all.
 ## Development
 
 ```sh
-tiss self test      # dependency-free suite, 174 assertions and counting
+tiss test           # dependency-free suite, 486 assertions and counting
 ```
 
 CI runs shellcheck plus the suite on ubuntu and macos. Design decisions,
 conventions, and the roadmap live in [DESIGN.md](DESIGN.md); how to add
 commands and the house rules live in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Company-private script trees layer over the core without forking:
-`tiss self tree add ~/work/acme-tiss` (see DESIGN.md "Overlay trees").
+Company-private script trees layer over the core without forking: toss a
+local tree on the pile (`tiss pile add ~/work/acme-tiss`) or distribute
+one as a git package (`tiss +devops` — see [docs/pile.md](docs/pile.md)).
 
 ## License
 
