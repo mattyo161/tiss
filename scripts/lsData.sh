@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# @description List saved data entries as jsonl (name, size, gzip/encrypted, age)
-# @usage tiss lsData [prefix]
-# @example tiss lsData | jq -r .name
-# @example tiss lsData db/ | jq 'select(.encrypted | not)'
-# @needs jq
+# @description List saved data — a table on your terminal, jsonl in pipes
+# @usage tiss lsData [prefix] [--json] [--cache|--cache-only]
+# @example tiss lsData                       # human table; cache entries summarized
+# @example tiss lsData | jq -r .name         # piped = jsonl (or force with --json)
+# @example tiss lsData --cache-only          # just the cacheExec entries
 #
-# One JSON object per entry: {name, gzip, encrypted, bytes, modified,
-# file}. The optional prefix filters by logical name, so namespaces list
-# naturally: `tiss lsData aws/`.
+# jsonl records are {name, gzip, encrypted, bytes, modified, file}. The
+# optional prefix filters by logical name (`tiss lsData aws/`).
+# cacheExec entries are excluded by default and summarized on stderr —
+# --cache includes them, --cache-only isolates them, and a cache/
+# prefix implies inclusion.
+# @needs jq
 #
 set -euo pipefail
 source "$TISS_LIB/init.sh"

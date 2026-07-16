@@ -41,6 +41,19 @@ touch "$TISS_DATA/ghost.tmp.abc123"
 assertEq "lsData hides in-flight tmp files" 3 "$(lsData | wc -l | tr -d ' ')"
 rm -f "$TISS_DATA/ghost.tmp.abc123"
 
+# cacheExec entries are summarized, not listed (they dominate real data).
+echo cached-payload | saveData cache/deadbeef
+assertEq "cache entries excluded by default" 3 "$(lsData | wc -l | tr -d ' ')"
+assertMatch "cache summary lands on stderr" 'cacheExec entry' \
+  "$(TISS_LOG_LEVEL=INFO lsData 2>&1 >/dev/null)"
+assertEq "--cache includes them" 4 "$(lsData --cache | wc -l | tr -d ' ')"
+assertEq "--cache-only isolates them" "cache/deadbeef" "$(lsData --cache-only | jq -r .name)"
+assertEq "a cache/ prefix implies inclusion" "cache/deadbeef" "$(lsData cache/ | jq -r .name)"
+assertEq "--json forces jsonl" 3 "$(lsData --json | jq -c . | wc -l | tr -d ' ')"
+assertExit "unknown flag is an error" 2 lsData --bogus
+assertEq "human bytes helper scales" "1.5KB" "$(tissHumanBytes 1536)"
+readData cache/deadbeef >/dev/null && rm -f "$TISS_DATA/cache/deadbeef"*
+
 # No readable partial files mid-write: tmp name never matches a readable variant.
 { echo start; sleep 0.4; echo end; } | saveData slow &
 sleep 0.15

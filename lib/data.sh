@@ -101,13 +101,43 @@ saveData() { # saveData [--gzip|--no-gzip] [--encrypt|--no-encrypt] <name>
   logDebug "saveData: wrote $base$ext"
 }
 
-lsData() { # lsData [prefix] -> jsonl: one record per saved name
-  local prefix="${1:-}" dir
+tissHumanBytes() { # tissHumanBytes <n> -> 512B, 1.4KB, 13.2MB ...
+  awk -v b="${1:-0}" 'BEGIN {
+    split("B KB MB GB TB", u, " "); i = 1
+    while (b >= 1024 && i < 5) { b /= 1024; i++ }
+    printf (i == 1 ? "%d%s" : "%.1f%s"), b, u[i]
+  }'
+}
+
+lsData() { # lsData [prefix] [--json] [--cache|--cache-only] -> table on a tty, else jsonl
+  # cacheExec entries (cache/<sha>) dominate real data, so they are
+  # summarized by default: --cache includes them, --cache-only isolates
+  # them, and a cache/ prefix implies inclusion. --json forces jsonl
+  # even on a tty; piped output is always jsonl.
+  local prefix="" json=0 cache_mode=skip a dir
+  for a in "$@"; do
+    case "$a" in
+      --json) json=1 ;;
+      --cache) cache_mode=include ;;
+      --cache-only) cache_mode=only ;;
+      -*)
+        logError "lsData: unknown flag '$a' (prefix, --json, --cache, --cache-only)"
+        return 2
+        ;;
+      *) prefix="$a" ;;
+    esac
+  done
+  case "$prefix" in cache*) cache_mode=include ;; esac
   dir="$(tissDataDir)"
   [ -d "$dir" ] || return 0
   ensureTool jq || return 127
 
-  local f rel name gz enc bytes mtime
+  local table=0 now
+  [ -t 1 ] && [ "$json" = 0 ] && table=1
+  now="$(date +%s)"
+  [ "$table" = 1 ] && printf '%-42s %9s %8s %s\n' "NAME" "SIZE" "AGE" "FLAGS"
+
+  local f rel name gz enc bytes mtime flags cache_n=0 cache_b=0
   while IFS= read -r f; do
     rel="${f#"$dir"/}"
     case "$rel" in *.tmp.*) continue ;; esac # in-flight saveData tmp files
@@ -129,17 +159,42 @@ lsData() { # lsData [prefix] -> jsonl: one record per saved name
       case "$name" in "$prefix"*) ;; *) continue ;; esac
     fi
     bytes="$(wc -c <"$f" | tr -d ' ')"
+    case "$name" in
+      cache/*)
+        if [ "$cache_mode" = "skip" ]; then
+          cache_n=$((cache_n + 1))
+          cache_b=$((cache_b + bytes))
+          continue
+        fi
+        ;;
+      *)
+        [ "$cache_mode" = "only" ] && continue
+        ;;
+    esac
     mtime="$(tissFileMtime "$f")"
-    jq -cn \
-      --arg name "$name" \
-      --argjson gzip "$gz" \
-      --argjson encrypted "$enc" \
-      --argjson bytes "$bytes" \
-      --arg modified "$(ts2js "$mtime")" \
-      --arg file "$rel" \
-      '{name: $name, gzip: $gzip, encrypted: $encrypted,
-        bytes: $bytes, modified: $modified, file: $file}'
+    if [ "$table" = 1 ]; then
+      flags=""
+      [ "$gz" = true ] && flags="gz"
+      [ "$enc" = true ] && flags="$flags${flags:+,}age"
+      printf '%-42s %9s %8s %s\n' "$name" "$(tissHumanBytes "$bytes")" "$(s2dur $((now - mtime)))" "$flags"
+    else
+      jq -cn \
+        --arg name "$name" \
+        --argjson gzip "$gz" \
+        --argjson encrypted "$enc" \
+        --argjson bytes "$bytes" \
+        --arg modified "$(ts2js "$mtime")" \
+        --arg file "$rel" \
+        '{name: $name, gzip: $gzip, encrypted: $encrypted,
+          bytes: $bytes, modified: $modified, file: $file}'
+    fi
   done < <(find "$dir" -type f | sort)
+
+  # The cache summary rides stderr: tty users see it under the table,
+  # pipelines never have their jsonl polluted.
+  if [ "$cache_mode" = "skip" ] && [ "$cache_n" -gt 0 ]; then
+    logInfo "+ $cache_n cacheExec entr$([ "$cache_n" = 1 ] && echo y || echo ies) ($(tissHumanBytes "$cache_b")) — --cache includes, --cache-only isolates"
+  fi
 }
 
 readData() { # readData <name> -> stream contents to stdout
