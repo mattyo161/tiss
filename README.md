@@ -2,7 +2,7 @@
 
 The production-grade terraform toolkit, as an installable tree:
 
-    tiss +devops                 # install + enable (branch tree/devops)
+    tiss +devops                 # install + enable (branch tiss/devops)
     tiss tf plan                 # fmt + self-correcting init, icon summary, offer to apply
     tiss tf apply                # apply the latest SAVED plan (never re-plans)
     tiss tf report --format md   # report from saved artifacts, terraform not needed
