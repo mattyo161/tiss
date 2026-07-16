@@ -41,4 +41,12 @@ else
   echo "  skip: uv not installed, json2xlsx untested" >&2
 fi
 
+# --- props <-> json ---------------------------------------------------------------
+assertEq "props2json splits on the FIRST =" '{"A":"1","B":"x=y"}' \
+  "$(printf 'A=1\nB=x=y\n# comment\n\n' | "$TISS_BIN" props2json 2>/dev/null)"
+assertEq "json2props stringifies non-strings" 'N=42' \
+  "$(printf '{"N":42}' | "$TISS_BIN" json2props 2>/dev/null)"
+assertEq "props/json round-trip" 'A=1
+B=x=y' "$(printf 'A=1\nB=x=y\n' | "$TISS_BIN" props2json 2>/dev/null | "$TISS_BIN" json2props 2>/dev/null)"
+
 finish

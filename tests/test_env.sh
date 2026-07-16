@@ -66,4 +66,21 @@ assertEq "tool@version becomes mise x" "mise-shim: x python@3.13 -- python --ver
   "$("$TISS_BIN" python@3.13 --version 2>/dev/null)"
 assertExit "unlisted tool@version refused" 127 "$TISS_BIN" nothere@1.0 --version
 
+# --- bare `tiss env`: the resolved TISS_* environment -----------------------------
+props="$("$TISS_BIN" env 2>/dev/null)"
+assertMatch "env dumps resolved TISS_DATA" "^TISS_DATA=$TISS_DATA$" "$props"
+assertMatch "env includes env-only vars" "^TISS_HOME=" "$props"
+assertMatch "env resolves defaults not just exports" '^TISS_AUTO_INSTALL=never$' "$props"
+assertEq "env output is sorted" "$props" "$(printf '%s\n' "$props" | sort)"
+assertEq "env --json is one jq-ready object" "$TISS_DATA" \
+  "$("$TISS_BIN" env --json 2>/dev/null | jq -r .TISS_DATA)"
+ex="$("$TISS_BIN" env --exports 2>/dev/null)"
+assertMatch "--exports emits export lines" '^export TISS_DATA=' "$ex"
+assertEq "--exports evals cleanly" "$TISS_DATA" \
+  "$(bash -c "eval \"\$1\"; printf '%s' \"\$TISS_DATA\"" bash "$ex")"
+mkdir -p "$TISS_CONFIG/env"
+echo '# empty' >"$TISS_CONFIG/env/edump.sh"
+assertMatch "@profile shows in the resolved env" '^TISS_ENV=edump$' \
+  "$("$TISS_BIN" @edump env 2>/dev/null)"
+
 finish
