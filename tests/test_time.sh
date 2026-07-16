@@ -22,6 +22,13 @@ d="$(($(utc +1d) - $(utc)))"
 d="$(($(utc -1h) - $(utc)))"
 [ "$d" -ge -3601 ] && [ "$d" -le -3599 ] && _report ok "utc -1h offset" || _report FAIL "utc -1h offset: $d"
 
+assertEq "s2dur seconds only" "45s" "$(s2dur 45)"
+assertEq "s2dur mixed units" "3h4m" "$(s2dur $((3 * 3600 + 4 * 60)))"
+assertEq "s2dur weeks and days" "1w2d" "$(s2dur $((604800 + 2 * 86400)))"
+assertEq "s2dur zero" "0s" "$(s2dur 0)"
+assertEq "s2dur round-trips dur2s" "1w2d3h4m5s" "$(s2dur "$(dur2s 1w2d3h4m5s)")"
+assertEq "tiss time s2dur" "1h30m" "$("$TISS_BIN" time s2dur 5400 2>/dev/null)"
+
 assertEq "ts2js epoch to ISO8601 UTC" "2026-01-01T00:00:00Z" "$(ts2js 1767225600)"
 assertMatch "epoch2ts compact form" '^[0-9]{8}T[0-9]{6}$' "$(epoch2ts 1767225600)"
 

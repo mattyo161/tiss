@@ -48,6 +48,25 @@ dur2s() { # dur2s <duration> -> seconds
   echo "$total"
 }
 
+s2dur() { # s2dur <seconds> -> compact duration (1w2d, 3h4m, 45s)
+  local s="${1:?usage: s2dur <seconds>}" out="" pair n unit secs
+  [ "$s" -lt 0 ] && s=$((-s))
+  if [ "$s" -eq 0 ]; then
+    echo "0s"
+    return 0
+  fi
+  for pair in w:604800 d:86400 h:3600 m:60 s:1; do
+    unit="${pair%%:*}"
+    secs="${pair#*:}"
+    n=$((s / secs))
+    if [ "$n" -gt 0 ]; then
+      out="$out$n$unit"
+      s=$((s % secs))
+    fi
+  done
+  echo "$out"
+}
+
 utc() { # utc [+-]<duration> -> epoch seconds, optionally offset from now
   local now
   now="$(date +%s)"

@@ -39,6 +39,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_TREES_REPO` | tiss's own origin | Distribution repo for short tree-package names — packages live on branches named `tree/<name>`, versions are tags `tree/<name>@<ver>`, `@latest` = branch head (forces a fetch) |
 | `TISS_CACHE_ENV` | empty | Extra env var names (space-separated) added to `cacheExec` keys, on top of the built-ins (`AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `GOOGLE_CLOUD_PROJECT`, `CLOUDSDK_ACTIVE_CONFIG_NAME`, `KUBECONFIG`) |
 | `TISS_NO_CACHE` | `0` | `1` bypasses all `cacheExec` reads *and* writes. Usually set per-invocation by the `--no-cache` flag (which cascades it to child processes) rather than persistently |
+| `TISS_CACHE_NOTICE` | `1` | Announce cache hits on stderr (`[CACHE] <cmd> (age 3m, expires in 12m — --refresh reruns)`) so cached data never masquerades as fresh; `0` silences |
 | `TISS_RMAFTER_PATHS` | home + tmp locations | Deletion allowlist: `rmAfter` only ever deletes under these colon-separated prefixes, enforced at schedule *and* reap time |
 | `TISS_RMAFTER_INTERVAL` | `60` | Max seconds the rmAfter background monitor sleeps between reap checks |
 | `TISS_TF_AUTO_APPLY` | `ask` | After `tf plan` finds changes: `ask` prompts y/N, `always` applies automatically, `never` stays hands-off. Also governs the `tf apply` prompt |

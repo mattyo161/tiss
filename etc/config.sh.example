@@ -69,6 +69,10 @@
 ## --no-cache flag instead of a persistent setting here.
 # cfg TISS_NO_CACHE 0
 
+## Announce cache hits on stderr ("[CACHE] <cmd> (age 3m, ...)") so
+## cached data never masquerades as fresh. 0 to silence.
+# cfg TISS_CACHE_NOTICE 1
+
 ## --- rmAfter -----------------------------------------------------------------
 
 ## Deletion allowlist: rmAfter only ever deletes under these colon-

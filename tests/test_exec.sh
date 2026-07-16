@@ -91,4 +91,16 @@ touch -t 202001010000 "$old_file"
 fresh="$(cacheExec --duration 1h bash -c 'echo fresh' 2>/dev/null)"
 assertEq "stale entry reruns command" "fresh" "$fresh"
 
+# --- cache-hit notice ([CACHE] on stderr; TISS_CACHE_NOTICE=0 silences) ----------
+cacheExec --duration 1h echo notice-test >/dev/null 2>&1
+hit_err="$(cacheExec --duration 1h echo notice-test 2>&1 >/dev/null)"
+assertMatch "cache hit announces itself on stderr" '\[CACHE\] echo notice-test \(age .*expires in ' "$hit_err"
+quiet="$(TISS_CACHE_NOTICE=0 bash -c '. "$TISS_LIB/init.sh"; cacheExec --duration 1h echo notice-test' 2>&1 >/dev/null)"
+assertEq "TISS_CACHE_NOTICE=0 silences the notice" "" "$quiet"
+miss_err="$(cacheExec --duration 1h echo notice-miss 2>&1 >/dev/null)"
+case "$miss_err" in
+  *'[CACHE]'*) _report FAIL "cache MISS printed a hit notice" ;;
+  *) _report ok "cache miss stays silent" ;;
+esac
+
 finish

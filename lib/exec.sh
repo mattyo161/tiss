@@ -193,6 +193,19 @@ cacheExec() { # cacheExec [--duration D] [--refresh|--recache|--no-cache] [--enc
       mtime="$(tissFileMtime "$file")"
       if [ $((now - mtime)) -le "$dur_s" ]; then
         logDebug "cacheExec: hit ($key)"
+        # Cached data should never masquerade as fresh: say so on stderr
+        # ([LEARN]-style, pipes stay clean). TISS_CACHE_NOTICE=0 silences.
+        cfg TISS_CACHE_NOTICE 1
+        if [ "$TISS_CACHE_NOTICE" = 1 ]; then
+          local nc="" nr=""
+          if [ -t 2 ]; then
+            nc=$'\033[36m'
+            nr=$'\033[0m'
+          fi
+          printf '%s[CACHE]%s %s (age %s, expires in %s — --refresh reruns)\n' \
+            "$nc" "$nr" "$(tissSanitizeCmd "$@")" \
+            "$(s2dur $((now - mtime)))" "$(s2dur $((dur_s - now + mtime)))" >&2
+        fi
         readData "$key"
         return $?
       fi
