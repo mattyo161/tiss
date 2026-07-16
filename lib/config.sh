@@ -21,7 +21,7 @@
 # from the core's scripts/self/ files, BEFORE the pile walk — no tree can
 # shadow `pull` or `doctor`, and no shortcut can take their names. The
 # real binaries stay reachable behind the explicit escape: `tiss -- env`.
-TISS_LEXICON="checkout completion config doctor env help init pile pull shell shortcuts test version"
+TISS_LEXICON="checkout completion config doctor env help init install pile pull shell shortcuts test version"
 
 tissReserved() { # tissReserved <word> -> 0 if part of the reserved lexicon
   case " $TISS_LEXICON " in

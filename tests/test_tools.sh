@@ -55,6 +55,20 @@ out="$(
 assertEq "registry miss + brew failure exits 127" 127 "$rc"
 assertMatch "failure names both installers" 'mise registry miss, brew failed' "$out"
 
+# --- tiss install: the explicit front door -----------------------------------------
+assertMatch "install with no args shows help" 'usage: tiss install' "$("$TISS_BIN" install 2>&1)"
+assertMatch "already-installed tools short-circuit" 'already installed: jq' \
+  "$(TISS_LOG_LEVEL=INFO "$TISS_BIN" install jq 2>&1)"
+out="$(
+  export PATH="$TISS_TEST_TMP/fakebin:/usr/bin:/bin"
+  "$TISS_BIN" install freshtool >/dev/null 2>&1 || exit 1
+  echo installed-ok
+)"
+assertEq "install works without a prompt (explicit consent)" "installed-ok" "$out"
+assertFileExists "and the tool landed behind mise" "$XDG_DATA_HOME/mise/shims/freshtool"
+assertMatch "the real install(1) survives behind --" 'usage: install' \
+  "$("$TISS_BIN" -- install 2>&1 || true)"
+
 # --- self init emits the activation story ----------------------------------------
 emit="$("$TISS_BIN" self init 2>/dev/null)"
 assertMatch "init puts ~/.local/bin on PATH" 'HOME/.local/bin' "$emit"
