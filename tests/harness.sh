@@ -11,12 +11,18 @@ set -u
 TISS_TEST_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export TISS_BIN="$TISS_TEST_ROOT/bin/tiss" # used by the test files sourcing this
 
-# Isolated, throwaway state per test file.
+# Isolated, throwaway state per test file. TISS_CONFIG must be isolated
+# BEFORE init.sh loads below, or the developer's real config leaks in —
+# and inherited TISS_* exports (e.g. from a tiss-flavored login shell)
+# would ride the environment into every subprocess, beating test configs.
 TISS_TEST_TMP="$(mktemp -d)"
 export TISS_DATA="$TISS_TEST_TMP/data"
 export TISS_STATE="$TISS_TEST_TMP/state"
+export TISS_CONFIG="$TISS_TEST_TMP/config"
+export TISS_TREES="$TISS_TEST_TMP/trees"
 export TISS_AUTO_INSTALL=never
 export TISS_LOG_LEVEL=ERROR
+unset TISS_PATH TISS_ENV TISS_TREES_REPO
 
 _pass=0
 _fail=0
