@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2012,SC2015,SC2016  # intentional test idioms: ls-count, A&&B||C with safe B, literal $ in inner shells
-# Tests for environment profiles (@name), tool@version, and REPL help.
+# shellcheck disable=SC2012,SC2015,SC2016,SC2153  # test idioms: ls-count, A&&B||C with safe B, literal $ in inner shells, TISS_DATA comes from the sourced harness
+# Tests for environment profiles (@name), tool@version, the resolved-env dump, and REPL help.
 . "$(dirname "$0")/harness.sh"
 
 export TISS_CONFIG="$TISS_TEST_TMP/config"
