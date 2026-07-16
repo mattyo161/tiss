@@ -11,12 +11,9 @@
 # rd = readData
 # lsData = lsData
 # ts = time ts
-# tfplan = tf plan
+# tf shortcuts (tfplan, tfapply, ...) ship with the devops tree: tiss +devops
 # encrypt = encrypt
 # decrypt = decrypt
-# tf = tf
-# tfapply = tf apply
-# tfshow = tf show
 # saveData = saveData
 # readData = readData
 # cacheExec = cacheExec
