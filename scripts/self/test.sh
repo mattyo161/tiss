@@ -18,4 +18,18 @@ if [ ! -d "$TISS_HOME/tests" ]; then
   exit 1
 fi
 
-exec bash "$TISS_HOME/tests/run.sh"
+rc=0
+bash "$TISS_HOME/tests/run.sh" || rc=1
+
+# Enabled trees carry their own tests — run them too (each file gets the
+# core harness via TISS_HOME; see any tree's tests/ for the pattern).
+while IFS= read -r tree; do
+  [ "$tree" = "$TISS_HOME" ] && continue
+  [ -d "$tree/tests" ] || continue
+  echo "---------------------------------------- $(basename "$tree") tree"
+  for t in "$tree/tests"/test_*.sh; do
+    [ -f "$t" ] || continue
+    bash "$t" || rc=1
+  done
+done < <(tissTrees)
+exit "$rc"

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # @description Manage the pile — the ordered stack of overlay trees, top wins
-# @usage tiss pile <list [--json]|add PATH|SPEC [--repo URL] [--branch BR]|remove PATH|NAME|resolve SPEC>
+# @usage tiss pile <list [--json]|add PATH|SPEC [--repo URL] [--branch BR]|remove PATH|NAME|resolve SPEC|new NAME [--push]>
 # @example tiss pile add devops                    # same as: tiss +devops
 # @example tiss pile add prod --repo git@github.com:acme/tiss_packages.git --branch env/prod
 # @example tiss pile resolve devops                # where would this fetch from? (jsonl)
+# @example tiss pile new devops --push             # scaffold a tree, publish branch tree/devops
 #
 # Overlay trees layer private/company commands over the core: most-specific
 # first, first match wins. A tree is a directory containing scripts/
@@ -111,6 +112,84 @@ cmdRemove() {
   cmdList
 }
 
+cmdNew() { # cmdNew <name> <repo> <push> — scaffold a tree ready for the pile
+  local name="$1" repo="$2" push="$3" dir branch
+  case "$name" in
+    "" | [.-]* | *[!A-Za-z0-9_.-]*)
+      logError "invalid tree name '$name' (letters, digits, _ . - only)"
+      exit 2
+      ;;
+  esac
+  if tissReserved "$name"; then
+    logError "'$name' is part of the reserved tiss lexicon"
+    exit 2
+  fi
+  branch="tree/$name"
+  dir="$name"
+  if [ -e "$dir" ]; then
+    logError "'$dir' already exists here"
+    exit 2
+  fi
+  ensureTool git || exit 127
+  mkdir -p "$dir/scripts" "$dir/etc"
+
+  cat >"$dir/scripts/hello.sh" <<SCAFF
+#!/usr/bin/env bash
+# @description Example command — rename me (file path IS the command path)
+# @usage tiss hello
+echo "hello from the $name tree"
+SCAFF
+  chmod +x "$dir/scripts/hello.sh"
+
+  cat >"$dir/etc/config.sh" <<SCAFF
+# shellcheck shell=bash
+# Defaults this tree ships (cfg = only-if-unset, so user config wins):
+# cfg TISS_${name}_EXAMPLE "value"
+SCAFF
+
+  cat >"$dir/etc/shortcuts" <<SCAFF
+# Muscle-memory shortcuts this tree suggests — uncomment to activate,
+# then: tiss shortcuts sync
+# hello = hello
+SCAFF
+
+  cat >"$dir/README.md" <<SCAFF
+# $name — a tiss tree
+
+Install: \`tiss +$name\` (from the distribution repo, branch \`$branch\`).
+Layout: \`scripts/\` is the command language (\`scripts/foo/bar.sh\` = \`tiss foo bar\`);
+optional \`etc/config.sh\` (defaults), \`etc/shortcuts\` (suggestions),
+\`lib/init.sh\` (helpers), \`tests/\` (run by \`tiss test\` when enabled).
+Version by tagging: \`git tag '$branch@v0.1.0'\` — users pin with \`tiss +$name@v0.1.0\`.
+SCAFF
+
+  git init -q "$dir"
+  git -C "$dir" checkout -q -b "$branch"
+  # Bare boxes/CI may have no git identity — scope a fallback to this repo.
+  if ! git config user.email >/dev/null 2>&1; then
+    git -C "$dir" config user.email "tiss@localhost"
+    git -C "$dir" config user.name "tiss"
+  fi
+  git -C "$dir" add -A
+  git -C "$dir" commit -q -m "$branch: scaffold"
+  logInfo "scaffolded $dir/ on branch $branch"
+
+  if [ "$push" = 1 ]; then
+    repo="${repo:-$(tissTreesRepo)}" || {
+      logError "no repo to push to — pass --repo URL or set TISS_TREES_REPO"
+      exit 2
+    }
+    git -C "$dir" remote add origin "$repo"
+    git -C "$dir" push -q -u origin "$branch" || {
+      logError "push to $repo failed — the scaffold is intact, push manually when ready"
+      exit 2
+    }
+    logInfo "published: $repo ($branch) — anyone can now: $TISS_NAME +$name"
+  else
+    logInfo "next: add your scripts, then publish:  git -C $dir push <repo> $branch"
+  fi
+}
+
 cmdResolve() { # cmdResolve <spec> <repo> <branch> — where would this fetch from?
   ensureTool jq || exit 127
   tissTreeResolve "$1" "$2" "$3" || exit 2
@@ -140,6 +219,7 @@ spec=""
 repo=""
 branch=""
 json=0
+push=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --repo)
@@ -151,6 +231,7 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --json) json=1 ;;
+    --push) push=1 ;;
     -*)
       logError "unknown flag '$1'"
       exit 2
@@ -194,8 +275,15 @@ case "$sub" in
     }
     cmdResolve "$spec" "$repo" "$branch"
     ;;
+  new)
+    [ -n "$spec" ] || {
+      logError "usage: $TISS_NAME pile new NAME [--push] [--repo URL]"
+      exit 2
+    }
+    cmdNew "$spec" "$repo" "$push"
+    ;;
   *)
-    logError "unknown subcommand '$sub' (list [--json], add PATH|SPEC [--repo URL] [--branch BR], remove PATH|NAME, resolve SPEC)"
+    logError "unknown subcommand '$sub' (list [--json], add PATH|SPEC [--repo URL] [--branch BR], remove PATH|NAME, resolve SPEC, new NAME [--push])"
     exit 2
     ;;
 esac

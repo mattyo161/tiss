@@ -114,4 +114,21 @@ assertEq "package rows carry their source" "$bare2" "$(printf '%s\n' "$lj" | jq 
 assertEq "disabled packages included, marked" "false" "$(printf '%s\n' "$lj" | jq -rs '.[] | select(.name == "devops") | .enabled')"
 assertEq "enabled packages marked" "true" "$(printf '%s\n' "$lj" | jq -rs '.[] | select(.name == "prod") | .enabled')"
 
+# --- pile new: the scaffolder --------------------------------------------------
+(cd "$TISS_TEST_TMP" && "$TISS_BIN" pile new mypack >/dev/null 2>&1)
+assertFileExists "scaffold creates the example leaf" "$TISS_TEST_TMP/mypack/scripts/hello.sh"
+assertFileExists "scaffold seeds tree config" "$TISS_TEST_TMP/mypack/etc/config.sh"
+assertEq "scaffold branch follows the convention" "tree/mypack" \
+  "$(git -C "$TISS_TEST_TMP/mypack" branch --show-current)"
+assertExit "reserved names refused by new" 2 "$TISS_BIN" pile new doctor
+assertExit "existing dir refused by new" 2 \
+  bash -c "cd '$TISS_TEST_TMP' && '$TISS_BIN' pile new mypack"
+
+bare3="$TISS_TEST_TMP/pubdist.git"
+git init -q --bare "$bare3"
+(cd "$TISS_TEST_TMP" && "$TISS_BIN" pile new pubpack --push --repo "$bare3" >/dev/null 2>&1)
+assertMatch "scaffold published as a tree branch" 'refs/heads/tree/pubpack' "$(git ls-remote "$bare3" 2>/dev/null)"
+assertEq "published scaffold installs and routes" "hello from the pubpack tree" \
+  "$(TISS_TREES_REPO="$bare3" "$TISS_BIN" +pubpack hello 2>/dev/null)"
+
 finish
