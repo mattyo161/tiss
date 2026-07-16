@@ -66,7 +66,8 @@ out="$(
 )"
 assertEq "install works without a prompt (explicit consent)" "installed-ok" "$out"
 assertFileExists "and the tool landed behind mise" "$XDG_DATA_HOME/mise/shims/freshtool"
-assertMatch "the real install(1) survives behind --" 'usage: install' \
+# BSD install(1) errors with "usage:", GNU with "missing file operand".
+assertMatch "the real install(1) survives behind --" 'usage: install|missing file operand' \
   "$("$TISS_BIN" -- install 2>&1 || true)"
 
 # --- self init emits the activation story ----------------------------------------
