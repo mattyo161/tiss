@@ -4,6 +4,7 @@
 TREE_ROOT="$(cd -P "$(dirname "$0")/.." && pwd)"
 . "${TISS_HOME:?run via tiss test}/tests/harness.sh"
 export TISS_PATH="$TREE_ROOT" # this tree must be on the pile for routing
+. "$TREE_ROOT/lib/init.sh"     # tree helpers, for direct lib assertions
 
 export TISS_RMAFTER_INTERVAL=60
 export TISS_LOG_LEVEL=INFO # assertions read logInfo/logWarn output
