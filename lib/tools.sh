@@ -78,6 +78,60 @@ tissBrewHint() { # exact steps: the installer + the platform's activation line
   esac
 }
 
+# --- did-you-mean -----------------------------------------------------------------
+tissSuggestCandidates() { # every first word tiss answers to at the root
+  {
+    local w tree entry name
+    for w in $TISS_LEXICON; do
+      printf '%s\n' "$w"
+    done
+    while IFS= read -r tree; do
+      for entry in "$tree/scripts"/*; do
+        [ -e "$entry" ] || continue
+        name="$(basename "$entry")"
+        case "$name" in _* | self) continue ;; esac
+        if [ -d "$entry" ]; then
+          printf '%s\n' "$name"
+        elif [ -x "$entry" ]; then
+          printf '%s\n' "${name%.*}"
+        fi
+      done
+    done < <(tissTrees)
+  } | sort -u
+}
+
+tissSuggest() { # tissSuggest <word> -> closest command word(s), or fail
+  # Damerau-Levenshtein over the candidate list, git-style threshold:
+  # one edit for short words, two for longer. Ties all print.
+  local word="$1" max=1
+  [ "${#word}" -ge 5 ] && max=2
+  tissSuggestCandidates | awk -v w="$word" -v max="$max" '
+    function dist(a, b,   i, j, la, lb, ca, cb, cost, m, d) {
+      la = length(a); lb = length(b)
+      for (i = 0; i <= la; i++) d[i, 0] = i
+      for (j = 0; j <= lb; j++) d[0, j] = j
+      for (i = 1; i <= la; i++)
+        for (j = 1; j <= lb; j++) {
+          ca = substr(a, i, 1); cb = substr(b, j, 1)
+          cost = (ca == cb) ? 0 : 1
+          m = d[i-1, j] + 1
+          if (d[i, j-1] + 1 < m) m = d[i, j-1] + 1
+          if (d[i-1, j-1] + cost < m) m = d[i-1, j-1] + cost
+          if (i > 1 && j > 1 && ca == substr(b, j-1, 1) && substr(a, i-1, 1) == cb && d[i-2, j-2] + 1 < m)
+            m = d[i-2, j-2] + 1
+          d[i, j] = m
+        }
+      return d[la, lb]
+    }
+    {
+      dd = dist(w, $0)
+      if (best == "" || dd < bestd) { bestd = dd; best = $0 }
+      else if (dd == bestd) best = best "\n" $0
+    }
+    END { if (best != "" && bestd <= max) print best }
+  ' | grep . # fail (rc 1) when nothing cleared the threshold
+}
+
 tissCustomInstall() { # tissCustomInstall <tool> -> install command for tools
   # outside the mise/brew registries, or fail. Keep each one a single
   # runnable command — it's shown to the user verbatim before running.

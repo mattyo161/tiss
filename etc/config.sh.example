@@ -35,6 +35,11 @@
 ## are always allowed; this gate only covers commands YOU type.
 # cfg TISS_INSTALL_ALLOW ""
 
+## Typo help: when a word matches nothing, suggest the closest tiss
+## command ("Did you mean \`tiss pile\`?") — interactive shells offer to
+## run it, scripts get the hint on stderr and a clean failure. 0 = off.
+# cfg TISS_SUGGEST 1
+
 
 ## --- paths -------------------------------------------------------------------
 

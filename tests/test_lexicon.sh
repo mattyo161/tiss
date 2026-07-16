@@ -61,4 +61,23 @@ export TISS_SHIMS="$TISS_TEST_TMP/shims"
 assertExit "shortcut named 'doctor' refused" 2 "$TISS_BIN" shortcuts add doctor tf plan
 assertExit "shortcut named 'pile' refused" 2 "$TISS_BIN" shortcuts add pile tf plan
 
+# --- did-you-mean: typos point somewhere ------------------------------------------------
+assertEq "tissSuggest corrects a plural typo" "pile" "$(tissSuggest piles)"
+assertEq "tissSuggest corrects a transposition" "doctor" "$(tissSuggest odctor)"
+assertEq "tissSuggest finds tree commands too" "encrypt" "$(tissSuggest encrpyt)"
+assertExit "gibberish clears no threshold" 1 tissSuggest xyzzyq
+rc=0
+hint="$("$TISS_BIN" piles 2>&1 >/dev/null)" || rc=$?
+assertEq "typo fails loudly without a tty" 127 "$rc"
+assertMatch "and carries the suggestion" 'Did you mean' "$hint"
+assertMatch "naming the correction" 'tiss pile' "$hint"
+rc=0
+off="$(TISS_SUGGEST=0 "$TISS_BIN" piles 2>&1 >/dev/null)" || rc=$?
+assertEq "TISS_SUGGEST=0 keeps the plain failure" 127 "$rc"
+case "$off" in
+  *"Did you mean"*) _report FAIL "suggestion shown despite TISS_SUGGEST=0" ;;
+  *) _report ok "TISS_SUGGEST=0 disables the suggestion" ;;
+esac
+assertEq "real binaries never trigger suggestions" "hi" "$("$TISS_BIN" echo hi 2>/dev/null)"
+
 finish

@@ -1,0 +1,16 @@
+{
+  "name": "tiss",
+  "dir": "/Users/mattyo/Projects/tiss",
+  "timestamp": "20260716T082436",
+  "created_at": "2026-07-16T08:24:36-0400",
+  "created_epoch": 1784204676,
+  "argv": "plan.sh ",
+  "aws_profile": "nri-customer",
+  "terraform_version": "1.15.6",
+  "plan_file": "/Users/mattyo/Projects/tiss/.terraform/tfplans/tiss.20260716T082436.tfplan",
+  "log_file": "/Users/mattyo/Projects/tiss/.terraform/tfplans/tiss.20260716T082436.tfplan.log",
+  "json_file": "/Users/mattyo/Projects/tiss/.terraform/tfplans/tiss.20260716T082436.tfplan.json",
+  "exit_code": 1,
+  "has_changes": false,
+  "summary": null
+}

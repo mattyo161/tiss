@@ -399,8 +399,38 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
   set -- $alias_cmd "$@"
   local tool="$1"
   shift
+  # A word that is no tool AND not install-allowlisted is probably a typo
+  # of something tiss knows — offer the correction before refusing.
+  if ! command -v "$tool" >/dev/null 2>&1 && ! tissInstallAllowed "$tool"; then
+    suggestOrFall "$tool" "$@"
+  fi
   ensureTool --gated "$tool" || exit 127
   exec "$tool" "$@"
+}
+
+suggestOrFall() { # suggestOrFall <word> [args...] — exec the correction, or return
+  cfg TISS_SUGGEST 1
+  [ "$TISS_SUGGEST" = 1 ] || return 0
+  local word="$1" matches n reply=""
+  shift
+  matches="$(tissSuggest "$word")" || return 0
+  n="$(printf '%s\n' "$matches" | wc -l | tr -d ' ')"
+  if [ "$n" -eq 1 ] && { : </dev/tty >/dev/tty; } 2>/dev/null; then
+    printf "%s: '%s' is not a tiss command or an installed tool. Did you mean \`%s %s\`? [Y/n] " \
+      "$TISS_NAME" "$word" "$TISS_NAME" "$matches" >/dev/tty
+    IFS= read -r reply </dev/tty || reply=""
+    case "$reply" in
+      n* | N*) return 0 ;; # they meant it — fall through to the install gate
+    esac
+    exec "$TISS_HOME/bin/tiss" "$matches" "$@"
+  fi
+  # Non-interactive (or several candidates): hint, but never guess —
+  # a script that typo'd should fail loudly, not be silently corrected.
+  logError "'$word' is not a tiss command or an installed tool. Did you mean:"
+  printf '%s\n' "$matches" | while IFS= read -r reply; do
+    logError "  $TISS_NAME $reply"
+  done
+  exit 127
 }
 
 # --- main --------------------------------------------------------------------

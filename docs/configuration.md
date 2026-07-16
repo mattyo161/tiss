@@ -31,6 +31,7 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_LOG_LEVEL` | `INFO` | stderr verbosity: `ERROR` \| `WARN` \| `INFO` \| `DEBUG` |
 | `TISS_ENV` | empty | Active environment profile. Set per-invocation with the `@` prefix (`tiss @prod ssm get ...`) or per-shell; participates in every cacheExec key, so environments never share cache entries |
 | `TISS_INSTALL_ALLOW` | empty | Extra tools passthrough may auto-install, beyond the curated built-in set (age, git, jq, rg, terraform, ...). `@needs`-declared tools are always allowed — this gates only commands you type |
+| `TISS_SUGGEST` | `1` | Typo help when a word matches nothing: interactive shells get "Did you mean \`tiss pile\`? [Y/n]" and can run it; scripts get the hint on stderr and exit 127 (never silently corrected). `0` disables |
 | `TISS_PATH` | empty | Overlay tree stack, colon-separated, most specific first. Prefer `tiss pile add` (persists it here for you) |
 | `TISS_DATA` | `~/.local/share/tiss/data` | The data store: `saveData`/`readData`/`lsData`, `cacheExec` entries, `db` credentials |
 | `TISS_STATE` | `~/.local/state/tiss` | State: `rmAfter` schedules, the `learnExec` history log |
