@@ -52,7 +52,55 @@ tissMiseBootstrap() { # official installer -> ~/.local/bin, activated in-process
     logError "bootstrap ran but mise is not at ~/.local/bin/mise — check the installer output above"
     return 127
   }
-  logInfo "mise is ready — your shells activate it via:  eval \"\$(${TISS_NAME:-tiss} init)\""
+  logInfo "mise is ready in this shell."
+  tissOfferRcActivation
+}
+
+# tissOfferRcActivation — the last mile of a fresh box: get the one
+# activation line (eval "$(tiss init)") into the user's rc so every NEW
+# shell has mise/brew/shortcuts live. Idempotent (marker line), rc is
+# bkup'd first, consent follows TISS_AUTO_INSTALL (ask/always/never).
+tissOfferRcActivation() {
+  local rc marker="# tiss activation" line
+  case "${SHELL:-}" in
+    */zsh) rc="$HOME/.zshrc" ;;
+    *) rc="$HOME/.bashrc" ;;
+  esac
+  # shellcheck disable=SC2016  # the rc line is meant literal
+  line='eval "$('"${TISS_NAME:-tiss}"' init)"'
+  if grep -qF "$marker" "$rc" 2>/dev/null || grep -qF "$line" "$rc" 2>/dev/null; then
+    return 0 # already wired
+  fi
+  case "${TISS_AUTO_INSTALL:-ask}" in
+    never)
+      logInfo "new shells need this in $rc:  $line"
+      return 0
+      ;;
+    always) ;;
+    *)
+      if { : </dev/tty >/dev/tty; } 2>/dev/null; then
+        local reply=""
+        printf "%s: add activation to %s so every new shell has it? [Y/n] "           "${TISS_NAME:-tiss}" "$rc" >/dev/tty
+        IFS= read -r reply </dev/tty || reply=""
+        case "$reply" in
+          n* | N*)
+            logInfo "skipped — add it yourself:  echo '$line' >> $rc"
+            return 0
+            ;;
+        esac
+      else
+        logInfo "new shells need this in $rc:  $line"
+        return 0
+      fi
+      ;;
+  esac
+  [ -f "$rc" ] && bkup "$rc" >/dev/null
+  {
+    echo ""
+    echo "$marker — mise/brew/shortcuts on PATH (remove any old activation lines they now duplicate)"
+    echo "$line"
+  } >>"$rc"
+  logInfo "activation added to $rc (backed up first) — new shells are fully wired"
 }
 
 tissBrewActivate() { # 0 if brew is usable; finds it even if shellenv never ran

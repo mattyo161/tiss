@@ -37,6 +37,10 @@ check "jq (required)" "run: mise use -g jq@latest" command -v jq
 check "mise (enables lazy tool install)" "any tool-needing tiss command offers to bootstrap it, or: curl https://mise.run | sh" command -v mise
 check "age (encryption engine)" "installs on first 'tiss encrypt', or: mise use -g age@latest" command -v age
 check "encryption identity" "created on first 'tiss encrypt'" test -s "$TISS_CONFIG/age/identity.age"
+rc="$HOME/.bashrc"; case "${SHELL:-}" in */zsh) rc="$HOME/.zshrc" ;; esac
+check "rc activation (eval \"\$($TISS_NAME init)\" in ${rc##*/})" \
+  "run: echo 'eval \"\$($TISS_NAME init)\"' >> $rc" \
+  grep -qF "$TISS_NAME init" "$rc"
 check "on PATH as '$TISS_NAME'" "ln -s $TISS_HOME/bin/tiss /usr/local/bin/$TISS_NAME" command -v "$TISS_NAME"
 
 # A tree shipping a reserved lexicon name is dead code at best,
