@@ -8,21 +8,21 @@ export TISS_TREES="$TISS_TEST_TMP/trees"
 
 G() { git -c user.email=t@t -c user.name=t "$@"; } # fixture commits need an identity
 
-# Fixture: a bare "distribution repo" whose tree/devops branch is a tree
-# shell — v1 tagged tree/devops@v1, branch head at v2.
+# Fixture: a bare "distribution repo" whose tiss/devops branch is a tree
+# shell — v1 tagged tiss/devops@v1, branch head at v2.
 bare="$TISS_TEST_TMP/dist.git"
 fix="$TISS_TEST_TMP/fixture"
 git init -q --bare "$bare"
 git init -q "$fix"
-G -C "$fix" checkout -q --orphan tree/devops
+G -C "$fix" checkout -q --orphan tiss/devops
 mkdir -p "$fix/scripts"
 printf '#!/usr/bin/env bash\n# @description say hello\necho "hello v1"\n' >"$fix/scripts/hello.sh"
 chmod +x "$fix/scripts/hello.sh"
 G -C "$fix" add -A && G -C "$fix" commit -q -m "devops v1"
-G -C "$fix" tag "tree/devops@v1"
+G -C "$fix" tag "tiss/devops@v1"
 printf '#!/usr/bin/env bash\n# @description say hello\necho "hello v2"\n' >"$fix/scripts/hello.sh"
 G -C "$fix" add -A && G -C "$fix" commit -q -m "devops v2"
-G -C "$fix" push -q "$bare" tree/devops "tree/devops@v1"
+G -C "$fix" push -q "$bare" tiss/devops "tiss/devops@v1"
 export TISS_TREES_REPO="$bare"
 
 # --- +name: install, enable, route — one gesture --------------------------------
@@ -70,16 +70,16 @@ assertEq "branch override respected" "env/prod" "$TREE_TRACK"
 assertEq "version tries the tag convention first" "env/prod@v2" "$(tissTreeRefCandidates | head -1)"
 assertEq "and falls back to the literal ref" "v2" "$(tissTreeRefCandidates | tail -1)"
 tissTreeResolve "devops"
-assertEq "installed clone is the mapping (track)" "tree/devops" "$TREE_TRACK"
+assertEq "installed clone is the mapping (track)" "tiss/devops" "$TREE_TRACK"
 assertEq "installed clone is the mapping (source)" "$bare" "$TREE_URL"
 
 # --- resolve: "where does this fetch from?" as jsonl -----------------------------------------
 r="$("$TISS_BIN" pile resolve devops 2>/dev/null)"
 assertEq "resolve shows the source" "$bare" "$(printf '%s' "$r" | jq -r .source)"
-assertEq "resolve shows the track" "tree/devops" "$(printf '%s' "$r" | jq -r .track)"
+assertEq "resolve shows the track" "tiss/devops" "$(printf '%s' "$r" | jq -r .track)"
 assertEq "resolve knows it's installed" "true" "$(printf '%s' "$r" | jq -r .installed)"
 r="$("$TISS_BIN" pile resolve newpkg@v9 2>/dev/null)"
-assertEq "uninstalled name resolves by convention" "tree/newpkg@v9" "$(printf '%s' "$r" | jq -r .ref)"
+assertEq "uninstalled name resolves by convention" "tiss/newpkg@v9" "$(printf '%s' "$r" | jq -r .ref)"
 assertEq "uninstalled name has no path" "null" "$(printf '%s' "$r" | jq -r .path)"
 
 # --- custom mapping: --repo/--branch, non-tree/ branch names ---------------------------------
@@ -118,7 +118,7 @@ assertEq "enabled packages marked" "true" "$(printf '%s\n' "$lj" | jq -rs '.[] |
 (cd "$TISS_TEST_TMP" && "$TISS_BIN" pile new mypack >/dev/null 2>&1)
 assertFileExists "scaffold creates the example leaf" "$TISS_TEST_TMP/mypack/scripts/hello.sh"
 assertFileExists "scaffold seeds tree config" "$TISS_TEST_TMP/mypack/etc/config.sh"
-assertEq "scaffold branch follows the convention" "tree/mypack" \
+assertEq "scaffold branch follows the convention" "tiss/mypack" \
   "$(git -C "$TISS_TEST_TMP/mypack" branch --show-current)"
 assertExit "reserved names refused by new" 2 "$TISS_BIN" pile new doctor
 assertExit "existing dir refused by new" 2 \
@@ -127,7 +127,7 @@ assertExit "existing dir refused by new" 2 \
 bare3="$TISS_TEST_TMP/pubdist.git"
 git init -q --bare "$bare3"
 (cd "$TISS_TEST_TMP" && "$TISS_BIN" pile new pubpack --push --repo "$bare3" >/dev/null 2>&1)
-assertMatch "scaffold published as a tree branch" 'refs/heads/tree/pubpack' "$(git ls-remote "$bare3" 2>/dev/null)"
+assertMatch "scaffold published as a tree branch" 'refs/heads/tiss/pubpack' "$(git ls-remote "$bare3" 2>/dev/null)"
 assertEq "published scaffold installs and routes" "hello from the pubpack tree" \
   "$(TISS_TREES_REPO="$bare3" "$TISS_BIN" +pubpack hello 2>/dev/null)"
 

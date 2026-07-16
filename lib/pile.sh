@@ -7,7 +7,7 @@
 # CLONE — git origin plus a `tiss.track` git-config entry — so there is
 # no registry file to drift out of sync; `tiss pile resolve <name>`
 # shows exactly where a name fetches from. Uninstalled short names fall
-# back to the convention: branch tree/<name> on the distribution repo
+# back to the convention: branch tiss/<name> on the distribution repo
 # (TISS_TREES_REPO, default: the repo tiss itself was cloned from).
 # owner/repo and full URLs name third-party trees — the whole repo is
 # the tree and the tracked branch is its default branch (HEAD).
@@ -108,7 +108,7 @@ tissTreeResolve() {
       logError "no distribution repo for tree '$TREE_NAME' — set one: cfg TISS_TREES_REPO <url>"
       return 2
     fi
-    TREE_TRACK="${branch:-tree/$TREE_NAME}"
+    TREE_TRACK="${branch:-tiss/$TREE_NAME}"
   fi
   return 0
 }
@@ -182,7 +182,7 @@ tissTreeInstall() { # tissTreeInstall <spec> [repo] [branch] -> print clone dir
         }
       else
         logError "could not clone '$TREE_NAME' from $TREE_URL (tried:$(tissTreeRefCandidates | tr '\n' ' ' | sed 's/ $//; s/^/ /'))"
-        logError "packages live on branches named tree/<name> — scaffold one: ${TISS_NAME:-tiss} pile new $TREE_NAME"
+        logError "packages live on branches named tiss/<name> — scaffold one: ${TISS_NAME:-tiss} pile new $TREE_NAME"
         return 2
       fi
     fi

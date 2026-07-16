@@ -56,7 +56,7 @@
 # cfg TISS_TREES "$HOME/.local/share/tiss/trees"
 
 ## Distribution repo for short tree-package names (branch convention
-## tree/<name>). Default: the repo tiss itself was cloned from.
+## tiss/<name>). Default: the repo tiss itself was cloned from.
 # cfg TISS_TREES_REPO ""
 
 ## --- cacheExec ---------------------------------------------------------------

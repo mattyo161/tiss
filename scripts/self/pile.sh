@@ -4,7 +4,7 @@
 # @example tiss pile add devops                    # same as: tiss +devops
 # @example tiss pile add prod --repo git@github.com:acme/tiss_packages.git --branch env/prod
 # @example tiss pile resolve devops                # where would this fetch from? (jsonl)
-# @example tiss pile new devops --push             # scaffold a tree, publish branch tree/devops
+# @example tiss pile new devops --push             # scaffold a tree, publish branch tiss/devops
 #
 # Overlay trees layer private/company commands over the core: most-specific
 # first, first match wins. A tree is a directory containing scripts/
@@ -13,7 +13,7 @@
 # environment variable overrides it entirely.
 #
 # `add` takes a local path OR a package spec (NAME[@VER], OWNER/REPO[@REF],
-# URL[@REF]) — short names resolve to branch tree/<name> on the
+# URL[@REF]) — short names resolve to branch tiss/<name> on the
 # distribution repo unless --repo/--branch map them elsewhere; the mapping
 # then lives in the clone (origin + tiss.track), inspect it with
 # `resolve` or `list --json`. The `tiss +name` prefix is the shorthand.
@@ -124,7 +124,7 @@ cmdNew() { # cmdNew <name> <repo> <push> — scaffold a tree ready for the pile
     logError "'$name' is part of the reserved tiss lexicon"
     exit 2
   fi
-  branch="tree/$name"
+  branch="tiss/$name"
   dir="$name"
   if [ -e "$dir" ]; then
     logError "'$dir' already exists here"
