@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.0.0](https://github.com/mattyo161/tiss/compare/v0.3.0...v1.0.0) (2026-07-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* the tf wrapper commands (tf plan/apply/report) are no longer in core — install them with: tiss +devops
+* 'tiss self tree' is now 'tiss pile'; 'tiss self cd' is removed; rc integration no longer emits a wrapper function.
+
+### Features
+
+* 'tiss install TOOL' — the explicit front door to lazy install ([a4c8878](https://github.com/mattyo161/tiss/commit/a4c88787cda956bd1f69153c88a7a9a9046e486d))
+* bootstrap mise on empty boxes; guide brew activation ([3194a48](https://github.com/mattyo161/tiss/commit/3194a48e9cf13ad9943c8c540a8b564dd36227f0))
+* **cache:** announce cache hits on stderr (TISS_CACHE_NOTICE) ([5b78f1d](https://github.com/mattyo161/tiss/commit/5b78f1dee9e1a5d94f5096c0573a1aff73f95c82))
+* **data:** lsData — tty table, cache entries summarized not listed ([d2ca686](https://github.com/mattyo161/tiss/commit/d2ca686a0feb5afad0e2d72193fe349cfaedabda))
+* did-you-mean — typos offer the closest tiss command ([82621ee](https://github.com/mattyo161/tiss/commit/82621ee61d423ba8b6f50500d639e9d1686e021d))
+* **env:** bare 'tiss env' shows the resolved environment; props&lt;-&gt;json leaves ([98213c7](https://github.com/mattyo161/tiss/commit/98213c71d7698643c876e2bd58bd196586b91c26))
+* if the xlsx file exists then append the sheet ([e881361](https://github.com/mattyo161/tiss/commit/e8813611ffb752b970cd345709eaec004ae8b3c8))
+* offer to write the activation line into the shell rc ([f4a6704](https://github.com/mattyo161/tiss/commit/f4a67043490294e106d45477cc9ca5fe43dae3ed))
+* **pile:** 'pile new' scaffolder; 'tiss test' runs enabled trees' tests ([f131552](https://github.com/mattyo161/tiss/commit/f1315524b1ee28c97c4f2b9192add1d66ce9572f))
+* reserved lexicon + the pile — meta commands go top-level ([9345093](https://github.com/mattyo161/tiss/commit/934509391c5f42cecee15ebbaafc1200c5482111))
+* tf moves out of core into the devops tree ([cc2e9c8](https://github.com/mattyo161/tiss/commit/cc2e9c84991b10e807bc440a12886e02597e79cd))
+* tree packages — +name/-name syntax for git-distributed overlay trees ([1f6c673](https://github.com/mattyo161/tiss/commit/1f6c673087cbbc532c088d6688c38b7ec068fc6d))
+
+
+### Bug Fixes
+
+* **ci:** SC2153 false positive in test_env.sh (shellcheck 0.9.0) ([900d3dc](https://github.com/mattyo161/tiss/commit/900d3dcc587c494e025a349493b493684d109c79))
+* **pile:** package branch convention is tiss/&lt;name&gt;, not tree/&lt;name&gt; ([2cc0979](https://github.com/mattyo161/tiss/commit/2cc097960d64954ab04228fbb448a75d7cb24da5))
+* **tests:** harness isolates the full TISS_* environment ([baf538f](https://github.com/mattyo161/tiss/commit/baf538f5b0367fc7228ee3522f239635fa35d7a0))
+* **tests:** install(1) usage text differs on GNU vs BSD ([09b3ab3](https://github.com/mattyo161/tiss/commit/09b3ab3ca4af2348775a996e616f1885338dd992))
+
+
+### Reverts
+
+* drop tiss ajl wrapper (scripts/ajl/_self.sh) ([a7936ce](https://github.com/mattyo161/tiss/commit/a7936ce3439f057221f81706934e8d53cb4898d1))
+
 ## [0.3.0](https://github.com/mattyo161/tiss/compare/v0.2.0...v0.3.0) (2026-07-15)
 
 
