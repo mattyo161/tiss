@@ -117,7 +117,9 @@ resolveInTree() {
     fi
     [ $# -gt 0 ] || break
     case "$1" in -*) break ;; esac # flags never route
-    if script="$(findScript "$node" "$1")"; then
+    if [ "$consumed" -eq 0 ] && [ "$1" = "self" ]; then
+      break # self/ is the lexicon's private backing store, not a namespace (killed at 1.0)
+    elif script="$(findScript "$node" "$1")"; then
       RESOLVED_SCRIPT="$script"
       RESOLVED_SHIFT=$((consumed + 1))
       return 0
@@ -300,7 +302,12 @@ shellComplete() {
     skip=0
     for w in "$@"; do
       [ -n "$w" ] || continue
-      if [ -d "$node/$w" ]; then
+      if [ "$node" = "$tree/scripts" ] && [ "$w" = "self" ]; then
+        # self/ is the lexicon's private backing store, not a namespace
+        # (killed at 1.0) — never descend into it, even if asked by name.
+        skip=1
+        break
+      elif [ -d "$node/$w" ]; then
         node="$node/$w"
       elif findScript "$node" "$w" >/dev/null 2>&1; then
         return 0 # inside a script's own args — nothing to add
@@ -597,7 +604,7 @@ main() {
   done 3< <(tissTrees)
 
   # Landed on a namespace (`tiss git`), or asked one for help
-  # (`tiss self --help`, `tiss self help`): merged namespace help.
+  # (`tiss git --help`, `tiss git help`): merged namespace help.
   # Any OTHER flag (`tiss git --version`) still passes through natively.
   local ns=() w trailing=""
   for w in "$@"; do
@@ -613,7 +620,9 @@ main() {
       *) ns+=("$w") ;;
     esac
   done
-  if [ ${#ns[@]} -gt 0 ] && [ "$trailing" != "flag" ]; then
+  # self/ is the lexicon's private backing store, not a namespace (killed at
+  # 1.0) — `tiss self` no longer lands on namespace help.
+  if [ ${#ns[@]} -gt 0 ] && [ "$trailing" != "flag" ] && [ "${ns[0]}" != "self" ]; then
     local nspath
     nspath="$(printf '/%s' "${ns[@]}")"
     while IFS= read -r tree; do

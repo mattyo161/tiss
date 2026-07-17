@@ -70,8 +70,8 @@ assertFileExists "and the tool landed behind mise" "$XDG_DATA_HOME/mise/shims/fr
 assertMatch "the real install(1) survives behind --" 'usage: install|missing file operand' \
   "$("$TISS_BIN" -- install 2>&1 || true)"
 
-# --- self init emits the activation story ----------------------------------------
-emit="$("$TISS_BIN" self init 2>/dev/null)"
+# --- init emits the activation story ----------------------------------------
+emit="$("$TISS_BIN" init 2>/dev/null)"
 assertMatch "init puts ~/.local/bin on PATH" 'HOME/.local/bin' "$emit"
 assertMatch "init activates mise for zsh" 'mise activate zsh' "$emit"
 assertMatch "init activates mise for bash" 'mise activate bash' "$emit"

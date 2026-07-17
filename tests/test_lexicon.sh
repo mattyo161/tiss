@@ -9,7 +9,7 @@ assertMatch "tiss doctor works top-level" 'invoked as' "$(TISS_LOG_LEVEL=INFO "$
 assertEq "tiss config path works top-level" "$TISS_CONFIG/config.sh" "$("$TISS_BIN" config path 2>/dev/null)"
 assertMatch "tiss version prints the version" '^tiss .* \(' "$("$TISS_BIN" version)"
 assertMatch "tiss init emits rc code" 'mise activate' "$("$TISS_BIN" init 2>/dev/null)"
-assertMatch "legacy self spelling still works (hidden)" 'invoked as' "$(TISS_LOG_LEVEL=INFO "$TISS_BIN" self doctor 2>&1 || true)"
+assertExit "legacy self spelling killed at 1.0 (no longer routes)" 127 env TISS_AUTO_INSTALL=never "$TISS_BIN" self doctor
 
 # --- no tree can shadow the lexicon ------------------------------------------------
 tree="$TISS_TEST_TMP/evil"

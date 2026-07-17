@@ -4,7 +4,7 @@
 #
 # Each tests/test_*.sh file sources this, gets isolated TISS_DATA/TISS_STATE
 # under a throwaway tmp dir, and uses the assert helpers. Run everything
-# with tests/run.sh (or `tiss self test` from a checkout).
+# with tests/run.sh (or `tiss test` from a checkout).
 #
 set -u
 

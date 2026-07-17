@@ -35,9 +35,9 @@ assertExit "unknown env exits 2" 2 "$TISS_BIN" @nope envprobe
 assertMatch "unknown env lists available" 'available:.*dev' "$err"
 assertMatch "unknown env says how to create" 'env edit nope' "$err"
 
-# self env list/show.
-assertMatch "self env list shows dev" '(^|\n)dev(\n|$)' "$("$TISS_BIN" self env list 2>/dev/null)"
-show="$("$TISS_BIN" self env show dev)"
+# env list/show.
+assertMatch "env list shows dev" '(^|\n)dev(\n|$)' "$("$TISS_BIN" env list 2>/dev/null)"
+show="$("$TISS_BIN" env show dev)"
 assertMatch "show lists tree file first" "acme/etc/env/dev.sh" "$show"
 assertMatch "show lists user file" "config/env/dev.sh" "$show"
 
@@ -52,7 +52,7 @@ assertMatch "bare @env enters the env shell" 'E=dev M=user-wins' "$repl"
 assertMatch "env shell banner names the env" 'environment: dev' "$repl"
 
 # REPL help: command tree + loaded helpers.
-h="$(printf 'help\nexit\n' | "$TISS_BIN" self shell 2>/dev/null)"
+h="$(printf 'help\nexit\n' | "$TISS_BIN" shell 2>/dev/null)"
 assertMatch "repl help shows commands" 'commands:' "$h"
 assertMatch "repl help lists helpers" 'helpers loaded in this shell' "$h"
 assertMatch "repl help includes cacheExec" 'cacheExec' "$h"

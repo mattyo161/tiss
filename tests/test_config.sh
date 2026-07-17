@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2012,SC2015,SC2016  # intentional test idioms: ls-count, A&&B||C with safe B, literal $ in inner shells
-# Tests for configuration: the template, tiss self config, and the
+# Tests for configuration: the template, tiss config, and the
 # self-enforcing rule that every TISS_* var in code is documented.
 . "$(dirname "$0")/harness.sh"
 
@@ -14,25 +14,25 @@ before="$(env | grep -c '^TISS_' || true)"
 assertEq "template sets nothing (all commented)" "$before" "$(env | grep -c '^TISS_' || true)"
 assertExit "template sources cleanly" 0 bash -c ". '$template'"
 
-# self config seeds the file from the template on first use.
-p="$("$TISS_BIN" self config path 2>/dev/null)"
+# config seeds the file from the template on first use.
+p="$("$TISS_BIN" config path 2>/dev/null)"
 assertEq "config path under TISS_CONFIG" "$TISS_CONFIG/config.sh" "$p"
 assertFileExists "config seeded from template" "$TISS_CONFIG/config.sh"
 assertMatch "seeded file is the commented template" '# cfg TISS_AUTO_INSTALL ask' "$(cat "$TISS_CONFIG/config.sh")"
 
 # list shows every template setting with effective values; env overrides show.
-list="$("$TISS_BIN" self config list 2>/dev/null)"
+list="$("$TISS_BIN" config list 2>/dev/null)"
 assertMatch "list shows settings" 'TISS_RMAFTER_INTERVAL' "$list"
 assertMatch "unset shows (default)" 'TISS_CACHE_ENV *\(default\)' "$list"
-dbg="$(TISS_LOG_LEVEL=DEBUG "$TISS_BIN" self config list 2>/dev/null)"
+dbg="$(TISS_LOG_LEVEL=DEBUG "$TISS_BIN" config list 2>/dev/null)"
 assertMatch "env override visible in list" 'TISS_LOG_LEVEL *DEBUG' "$dbg"
 
 # An uncommented setting takes effect... and env still beats it.
 echo 'cfg TISS_SSM_CACHE_DURATION 5m' >>"$TISS_CONFIG/config.sh"
 assertMatch "config file value effective" 'TISS_SSM_CACHE_DURATION *5m' \
-  "$("$TISS_BIN" self config list 2>/dev/null)"
+  "$("$TISS_BIN" config list 2>/dev/null)"
 assertMatch "env beats config file" 'TISS_SSM_CACHE_DURATION *2h' \
-  "$(TISS_SSM_CACHE_DURATION=2h "$TISS_BIN" self config list 2>/dev/null)"
+  "$(TISS_SSM_CACHE_DURATION=2h "$TISS_BIN" config list 2>/dev/null)"
 
 # Config can now relocate TISS_DATA (the chicken-and-egg fix). The
 # harness exports TISS_DATA (env beats config, by design), so unset it

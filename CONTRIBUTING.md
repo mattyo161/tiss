@@ -51,7 +51,7 @@ third-party deps: uv + PEP 723 inline metadata — see
 ## Development loop
 
 ```sh
-tiss self test        # dependency-free suite; add tests with your change
+tiss test              # dependency-free suite; add tests with your change
 mise x shellcheck -- shellcheck bin/tiss lib/*.sh scripts/*.sh scripts/*/*.sh tests/*.sh
 ```
 
@@ -61,7 +61,7 @@ new behavior — the suite is the contract.
 ## Company/private scripts
 
 Don't PR company-specific wrappers into the core — that's what overlay
-trees are for (`tiss self tree add ~/work/acme-tiss`, see DESIGN.md).
+trees are for (`tiss pile add ~/work/acme-tiss`, see DESIGN.md).
 Core wrappers encode *generic* best practice.
 
 ## Commits & releases

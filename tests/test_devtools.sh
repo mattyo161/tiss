@@ -63,8 +63,8 @@ case "$emit" in
   *) _report ok "init emission carries no wrapper function" ;;
 esac
 
-# --- self shell (the dev REPL) ---------------------------------------------------------
-repl="$(printf 'dur2s 1w1d\npwd\nexit\n' | "$TISS_BIN" self shell 2>/dev/null)"
+# --- shell (the dev REPL) ---------------------------------------------------------
+repl="$(printf 'dur2s 1w1d\npwd\nexit\n' | "$TISS_BIN" shell 2>/dev/null)"
 assertMatch "shell loads helpers" '691200' "$repl"
 assertMatch "shell starts in TISS_HOME" "$TISS_TEST_ROOT" "$repl"
 assertMatch "shell announces itself" 'dev shell' "$repl"
