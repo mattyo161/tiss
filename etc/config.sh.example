@@ -87,14 +87,6 @@
 ## Max seconds the background monitor sleeps between reap checks
 # cfg TISS_RMAFTER_INTERVAL 60
 
-## --- ajl wrapper -------------------------------------------------------------
-
-## How long `tiss ajl` caches read results (get-*/describe-*/list-*)
-# cfg TISS_AJL_CACHE_DURATION 15m
-
-## Encrypt cached ajl results at rest (1 = on)
-# cfg TISS_AJL_CACHE_ENCRYPT 0
-
 ## --- ssm wrapper -------------------------------------------------------------
 
 ## How long `tiss ssm` caches read results (tiss duration grammar: 30 = 30m)

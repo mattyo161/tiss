@@ -43,8 +43,6 @@ TISS_LOG_LEVEL=DEBUG tiss ssm get --path /develop
 | `TISS_CACHE_NOTICE` | `1` | Announce cache hits on stderr (`[CACHE] <cmd> (age 3m, expires in 12m — --refresh reruns)`) so cached data never masquerades as fresh; `0` silences |
 | `TISS_RMAFTER_PATHS` | home + tmp locations | Deletion allowlist: `rmAfter` only ever deletes under these colon-separated prefixes, enforced at schedule *and* reap time |
 | `TISS_RMAFTER_INTERVAL` | `60` | Max seconds the rmAfter background monitor sleeps between reap checks |
-| `TISS_AJL_CACHE_DURATION` | `15m` | How long `tiss ajl` caches read results (`get-*`/`describe-*`/`list-*`; `--params-json` streams are never cached) |
-| `TISS_AJL_CACHE_ENCRYPT` | `0` | Encrypt cached ajl results at rest (`1` to enable) |
 | `TISS_SSM_CACHE_DURATION` | `1h` | How long `tiss ssm` caches read results (tiss duration grammar) |
 | `TISS_SSM_CACHE_ENCRYPT` | `1` | Encrypt cached ssm results at rest (`0` to disable) |
 
