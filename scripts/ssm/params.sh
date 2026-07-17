@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @description Describe SSM parameters using `ajl` to get full set of parameters
+# @description Describe SSM parameters (full set, cached) via aws ssm describe-parameters
 # @usage tiss ssm params [--duration 1h] [--refresh|--recache|--no-cache]
 # @example tiss ssm params | jq -r '.Name'
 # @example tiss ssm params --no-cache
@@ -43,5 +43,8 @@ if [ "$cache" = 1 ]; then
   [ -n "$refresh" ] && runner+=(--refresh)
 fi
 
-# TODO test performance vs ajl
+# Decided: ajl's own ssm work (github.com/mattyo161/ajl) is the fast path
+# for real usage now; scripts/ssm stays as-is as tiss's wrapper-writing
+# teaching example (see docs/cookbook-wrappers.md), destined to eventually
+# become a thin shell over ajl rather than calling aws directly.
 ${runner[@]+"${runner[@]}"} aws ssm describe-parameters ${extra[@]+"${extra[@]}"} | jq -c '.Parameters[]'
