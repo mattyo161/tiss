@@ -418,7 +418,7 @@ passthrough() { # passthrough <tool> [args...] — behave as if called natively
 suggestOrFall() { # suggestOrFall <word> [args...] — exec the correction, or return
   cfg TISS_SUGGEST 1
   [ "$TISS_SUGGEST" = 1 ] || return 0
-  local word="$1" matches n reply=""
+  local word="$1" matches n reply="" pick
   shift
   matches="$(tissSuggest "$word")" || return 0
   n="$(printf '%s\n' "$matches" | wc -l | tr -d ' ')"
@@ -430,9 +430,17 @@ suggestOrFall() { # suggestOrFall <word> [args...] — exec the correction, or r
       n* | N*) return 0 ;; # they meant it — fall through to the install gate
     esac
     exec "$TISS_HOME/bin/tiss" "$matches" "$@"
+  elif [ "$n" -gt 1 ] && command -v fzf >/dev/null 2>&1 && { : </dev/tty >/dev/tty; } 2>/dev/null; then
+    # Several equally-close candidates and fzf is already installed (never
+    # force-installed just for a typo hint) — let them pick instead of
+    # dumping a plain list. Esc/Ctrl-C (or no selection) falls through to
+    # the plain list below, same as declining the single-match prompt.
+    pick="$(printf '%s\n' "$matches" | fzf --prompt="$TISS_NAME: did you mean> " --height=~40%)" || pick=""
+    [ -n "$pick" ] && exec "$TISS_HOME/bin/tiss" "$pick" "$@"
   fi
-  # Non-interactive (or several candidates): hint, but never guess —
-  # a script that typo'd should fail loudly, not be silently corrected.
+  # Non-interactive (or several candidates with no fzf, or fzf aborted):
+  # hint, but never guess — a script that typo'd should fail loudly, not
+  # be silently corrected.
   logError "'$word' is not a tiss command or an installed tool. Did you mean:"
   printf '%s\n' "$matches" | while IFS= read -r reply; do
     logError "  $TISS_NAME $reply"
