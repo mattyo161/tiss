@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0](https://github.com/mattyo161/tiss/compare/v1.0.0...v2.0.0) (2026-07-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* `tiss self <reserved-word>` no longer routes to anything; use the top-level word directly (`tiss doctor`, `tiss init`, `tiss config list`, etc.)
+
+### Features
+
+* fzf picker for did-you-mean with multiple candidates ([b2ec9b4](https://github.com/mattyo161/tiss/commit/b2ec9b428cdd006acac3efb86ed7a0edf6a9ecb9))
+* kill legacy `tiss self X` spelling now that we're at 1.0 ([47467b2](https://github.com/mattyo161/tiss/commit/47467b2620d338018738b8f78311fd301278691f))
+* tiss env --yaml/--toml + props2yaml/props2toml/yaml2props/toml2props ([ff17f7b](https://github.com/mattyo161/tiss/commit/ff17f7b07872852e8641a80b091b35c90aa470d9))
+
 ## [1.0.0](https://github.com/mattyo161/tiss/compare/v0.3.0...v1.0.0) (2026-07-17)
 
 
