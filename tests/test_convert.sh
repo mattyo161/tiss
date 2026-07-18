@@ -49,4 +49,18 @@ assertEq "json2props stringifies non-strings" 'N=42' \
 assertEq "props/json round-trip" 'A=1
 B=x=y' "$(printf 'A=1\nB=x=y\n' | "$TISS_BIN" props2json 2>/dev/null | "$TISS_BIN" json2props 2>/dev/null)"
 
+# --- props <-> yaml / toml (yq) -----------------------------------------------------
+if ! command -v yq >/dev/null 2>&1; then
+  echo "$(basename "$0"): props/yaml/toml conversions skipped (yq not installed)" >&2
+else
+  assertMatch "props2yaml emits yaml" '^A: "1"$' \
+    "$(printf 'A=1\nB=two\n' | "$TISS_BIN" props2yaml 2>/dev/null)"
+  assertEq "props/yaml round-trip" 'A=1
+B=two' "$(printf 'A=1\nB=two\n' | "$TISS_BIN" props2yaml 2>/dev/null | "$TISS_BIN" yaml2props 2>/dev/null)"
+  assertMatch "props2toml emits toml" '^A = "1"$' \
+    "$(printf 'A=1\nB=two\n' | "$TISS_BIN" props2toml 2>/dev/null)"
+  assertEq "props/toml round-trip" 'A=1
+B=two' "$(printf 'A=1\nB=two\n' | "$TISS_BIN" props2toml 2>/dev/null | "$TISS_BIN" toml2props 2>/dev/null)"
+fi
+
 finish

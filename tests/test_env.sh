@@ -74,6 +74,14 @@ assertMatch "env resolves defaults not just exports" '^TISS_AUTO_INSTALL=never$'
 assertEq "env output is sorted" "$props" "$(printf '%s\n' "$props" | sort)"
 assertEq "env --json is one jq-ready object" "$TISS_DATA" \
   "$("$TISS_BIN" env --json 2>/dev/null | jq -r .TISS_DATA)"
+if command -v yq >/dev/null 2>&1; then
+  assertMatch "env --yaml emits yaml" "^TISS_DATA: \"?$TISS_DATA\"?\$" \
+    "$("$TISS_BIN" env --yaml 2>/dev/null | grep '^TISS_DATA:')"
+  assertMatch "env --toml emits toml" "^TISS_DATA = \"$TISS_DATA\"\$" \
+    "$("$TISS_BIN" env --toml 2>/dev/null | grep '^TISS_DATA ')"
+else
+  echo "  skip: yq not installed, env --yaml/--toml untested" >&2
+fi
 ex="$("$TISS_BIN" env --exports 2>/dev/null)"
 assertMatch "--exports emits export lines" '^export TISS_DATA=' "$ex"
 assertEq "--exports evals cleanly" "$TISS_DATA" \

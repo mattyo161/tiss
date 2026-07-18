@@ -184,7 +184,6 @@ tissCustomInstall() { # tissCustomInstall <tool> -> install command for tools
   # outside the mise/brew registries, or fail. Keep each one a single
   # runnable command — it's shown to the user verbatim before running.
   case "$1" in
-    ajl) echo "uv tool install git+https://github.com/mattyo161/ajl" ;;
     *) return 1 ;;
   esac
 }
@@ -203,7 +202,7 @@ tissCommandAlias() { # namespace/short name -> real command for passthrough
 # running with your permissions), but a mistyped passthrough command must
 # never become an "install this package? [Y/n]" prompt. Extend with
 # TISS_INSTALL_ALLOW (space-separated names) in your config.
-TISS_INSTALL_ALLOW_DEFAULT="age ajl aws fzf gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch"
+TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch yq"
 
 tissInstallAllowed() { # tissInstallAllowed <tool> -> 0 if passthrough-installable
   local t

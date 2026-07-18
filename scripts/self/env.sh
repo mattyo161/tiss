@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # @description Show the resolved tiss environment; manage profiles (dev/prod...)
-# @usage tiss env [--exports|--json] | [list|show NAME|edit NAME]
+# @usage tiss env [--exports|--json|--yaml|--toml] | [list|show NAME|edit NAME]
 # @example tiss env                    # every effective TISS_* var, resolved, as props
 # @example tiss env --json | jq -r .TISS_DATA
+# @example tiss env --yaml
 # @example tiss @prod env              # see exactly what the prod profile changes
 # @example tiss env edit dev           # create/edit your dev profile
 #
 # Bare `tiss env` prints the POST-RESOLUTION truth — environment beats
 # config beats pile beats defaults — which `env | grep '^TISS'` can
 # never show (it only sees what your shell exported). One KEY=value per
-# line (props), sorted; --exports emits eval-able export lines,
-# --json one jq-ready object (via props2json).
+# line (props), sorted; --exports emits eval-able export lines, --json/
+# --yaml/--toml pipe through the matching props2* converter.
 #
 # Profiles: plain exports (AWS_PROFILE, regions, defaults). Trees ship
 # etc/env/<name>.sh for team-wide profiles; yours live in
@@ -60,6 +61,16 @@ case "${1:-}" in
     ensureTool jq || exit 127
     dumpProps | "$TISS_SCRIPTS/props2json.sh"
     ;;
+  --yaml)
+    ensureTool jq || exit 127
+    ensureTool yq || exit 127
+    dumpProps | "$TISS_SCRIPTS/props2yaml.sh"
+    ;;
+  --toml)
+    ensureTool jq || exit 127
+    ensureTool yq || exit 127
+    dumpProps | "$TISS_SCRIPTS/props2toml.sh"
+    ;;
   -h | --help | help)
     tissHelp "$0"
     ;;
@@ -102,7 +113,7 @@ TPL
     exec "${EDITOR:-vi}" "$target"
     ;;
   *)
-    logError "unknown subcommand '${1}' (bare = resolved env; --exports, --json, list, show NAME, edit NAME)"
+    logError "unknown subcommand '${1}' (bare = resolved env; --exports, --json, --yaml, --toml, list, show NAME, edit NAME)"
     exit 2
     ;;
 esac
