@@ -270,9 +270,7 @@ ensureTool() { # ensureTool [--gated] <name> -> 0 if available (installing if ne
   if [ -n "$custom" ]; then
     # Tools outside the mise/brew registries carry their own install
     # command (tissCustomInstall) — shown verbatim, run verbatim.
-    ensureTool uv || return 127
     logInfo "Installing $tool: $custom"
-    # shellcheck disable=SC2086  # the install command is intentionally word-split
     bash -c "$custom" >&2 || {
       logError "could not install $tool ($custom failed)"
       return 127
