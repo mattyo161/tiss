@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0](https://github.com/mattyo161/tiss/compare/v2.0.0...v2.1.0) (2026-07-24)
+
+
+### Features
+
+* add `gddy` tool to tiss ([d0c3eee](https://github.com/mattyo161/tiss/commit/d0c3eee7ce906c264b34965506ee908fcae15c95))
+* add snow/snowsql tool support ([4bde44f](https://github.com/mattyo161/tiss/commit/4bde44f3c504d4b5d232822f39a564e5edbef1ee))
+
+
+### Bug Fixes
+
+* drop stale ajl-era uv requirement from custom installs ([449bfcb](https://github.com/mattyo161/tiss/commit/449bfcb5f33afcf3e93047d941d8d11d2302d288))
+
 ## [2.0.0](https://github.com/mattyo161/tiss/compare/v1.0.0...v2.0.0) (2026-07-18)
 
 
