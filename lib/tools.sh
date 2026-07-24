@@ -185,6 +185,8 @@ tissCustomInstall() { # tissCustomInstall <tool> -> install command for tools
   # runnable command — it's shown to the user verbatim before running.
   case "$1" in
     gddy) echo "curl -fsSL https://github.com/godaddy/cli/releases/latest/download/install.sh | bash" ;;
+    snow) echo "uv tool install snowflake-cli" ;;
+    snowsql) echo 'if command -v brew >/dev/null 2>&1; then brew install --cask snowflake-snowsql; else echo "SnowSQL needs a version-pinned platform installer — see https://docs.snowflake.com/en/user-guide/snowsql-install-config" >&2; exit 1; fi' ;;
     *) return 1 ;;
   esac
 }
@@ -203,7 +205,7 @@ tissCommandAlias() { # namespace/short name -> real command for passthrough
 # running with your permissions), but a mistyped passthrough command must
 # never become an "install this package? [Y/n]" prompt. Extend with
 # TISS_INSTALL_ALLOW (space-separated names) in your config.
-TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gddy gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck terraform tmux tree uv watch yq"
+TISS_INSTALL_ALLOW_DEFAULT="age aws fzf gddy gh git go jc jq mise mlr node pstree python python3 rg ruby shellcheck snow snowsql terraform tmux tree uv watch yq"
 
 tissInstallAllowed() { # tissInstallAllowed <tool> -> 0 if passthrough-installable
   local t
